@@ -157,19 +157,38 @@ function syncStatus(state, msg) {
 // ---- Supabase CRUD ----
 async function dbLoad() {
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/houses?select=id,data`, { headers: HEADERS });
-    if (!r.ok) throw new Error(await r.text());
+    const r = await fetch(`${SUPA_URL}/rest/v1/houses?select=id,data&order=id.asc`, { headers: HEADERS });
+    if (!r.ok) {
+      const err = await r.text();
+      console.error('dbLoad error:', r.status, err);
+      throw new Error(err);
+    }
     const rows = await r.json();
+    console.log('Loaded', rows.length, 'properties from Supabase');
     houses = rows.map(row => ({ ...row.data, id: row.id }));
+    // Keep localStorage in sync as backup
+    try { localStorage.setItem('ht_backup', JSON.stringify(houses)); } catch(e) {}
     syncStatus('ok', 'Synced');
   } catch(e) {
-    syncStatus('err', 'Offline');
-    console.error(e);
+    console.error('Supabase load failed:', e);
+    // Fall back to localStorage backup
+    try {
+      const backup = JSON.parse(localStorage.getItem('ht_backup') || '[]');
+      if (backup.length) {
+        houses = backup;
+        syncStatus('err', 'Offline — showing cached data');
+        console.warn('Using localStorage backup:', backup.length, 'properties');
+        return;
+      }
+    } catch(e2) {}
+    syncStatus('err', 'Could not load — check Supabase RLS policies');
   }
 }
 
 async function dbUpsert(h) {
   syncStatus('saving', 'Saving…');
+  // Always write to localStorage backup first
+  try { localStorage.setItem('ht_backup', JSON.stringify(houses)); } catch(e) {}
   try {
     const r = await fetch(`${SUPA_URL}/rest/v1/houses`, {
       method: 'POST',
@@ -179,8 +198,8 @@ async function dbUpsert(h) {
     if (!r.ok) throw new Error(await r.text());
     syncStatus('ok', 'Saved');
   } catch(e) {
-    syncStatus('err', 'Save failed');
-    console.error(e);
+    syncStatus('err', 'Saved locally — sync failed');
+    console.error('dbUpsert failed:', e);
   }
 }
 
