@@ -446,296 +446,158 @@ async function deletePhoto(id, idx) {
 
 async function drawGreenOverlay() {
   syncStatus('saving', 'Loading green spaces…');
-  // Get bounding box covering all properties
   const lats = houses.filter(h=>h.lat).map(h=>h.lat);
   const lngs = houses.filter(h=>h.lat).map(h=>h.lng);
-  if (!lats.length) { syncStatus('ok',''); return; }
-  const minLat = Math.min(...lats)-0.03, maxLat = Math.max(...lats)+0.03;
-  const minLng = Math.min(...lngs)-0.04, maxLng = Math.max(...lngs)+0.04;
-  const bbox = `${minLat},${minLng},${maxLat},${maxLng}`;
-
-  const query = `[out:json][timeout:20];
-(
-  way["leisure"="park"](${bbox});
-  way["leisure"="nature_reserve"](${bbox});
-  way["landuse"="grass"](${bbox});
-  way["landuse"="recreation_ground"](${bbox});
-  way["leisure"="garden"](${bbox});
-  way["leisure"="pitch"](${bbox});
-);
-out geom;`;
-
+  if (!lats.length) { syncStatus('ok','No properties pinned'); return; }
+  const pad = 0.04;
+  const bbox = `${Math.min(...lats)-pad},${Math.min(...lngs)-pad},${Math.max(...lats)+pad},${Math.max(...lngs)+pad}`;
+  const query = `[out:json][timeout:25];(way["leisure"="park"](${bbox});way["leisure"="nature_reserve"](${bbox});way["landuse"="grass"](${bbox});way["landuse"="recreation_ground"](${bbox});way["leisure"="garden"](${bbox});way["leisure"="pitch"](${bbox}););out geom;`;
   try {
-    const r = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST', body: 'data=' + encodeURIComponent(query)
-    });
+    const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:'data='+encodeURIComponent(query) });
+    if (!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
-    const features = (d.elements || []).map(el => ({
-      type: 'Feature',
-      properties: { name: el.tags && el.tags.name || '' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [el.geometry ? el.geometry.map(p => [p.lon, p.lat]) : []]
-      }
+    const features = (d.elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>({
+      type:'Feature', properties:{ name:(el.tags&&el.tags.name)||'' },
+      geometry:{ type:'Polygon', coordinates:[el.geometry.map(p=>[p.lon,p.lat])] }
     }));
-
-    greenLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-      style: { color: '#2d8a4e', fillColor: '#4caf7d', fillOpacity: 0.3, weight: 1, opacity: 0.6 },
-      onEachFeature: (f, layer) => {
-        if (f.properties.name) layer.bindTooltip(`🌿 ${f.properties.name}`, { sticky: true });
-      }
+    greenLayer = L.geoJSON({ type:'FeatureCollection', features }, {
+      style:{ color:'#2d8a4e', fillColor:'#52b788', fillOpacity:0.3, weight:1.5, opacity:0.7 },
+      onEachFeature:(f,layer)=>{ if(f.properties.name) layer.bindTooltip('🌿 '+f.properties.name,{sticky:true}); }
     }).addTo(map);
-    syncStatus('ok', 'Green spaces loaded');
+    syncStatus('ok', features.length+' green spaces loaded');
   } catch(e) {
-    console.error('Green overlay failed', e);
+    console.error('Green overlay failed:', e);
     syncStatus('err', 'Could not load green spaces');
   }
 }
 
-async function regeocodeAll() {
-  if (!confirm('Re-locate all pins using Google? This will fix any incorrect locations.')) return;
-  syncStatus('saving', 'Relocating all pins…');
-  for (const h of houses) {
-    h.lat = null; h.lng = null;
-    await geocode(h);
-    if (h.lat) placeMarker(h);
-  }
-  fitAll(); render();
-  syncStatus('ok', 'All pins updated');
-}
-
-async function relocate(id) {
-  const h = houses.find(x => x.id === id);
-  if (!h) return;
-  h.lat = null; h.lng = null;
-  syncStatus('saving', 'Locating…');
-  await geocode(h);
-  if (h.lat) { placeMarker(h); map.setView([h.lat, h.lng], 16); syncStatus('ok', 'Pin updated'); }
-  else { syncStatus('err', 'Could not locate — try a more specific address'); }
-}
-
-// ---- Overlays ----
-let currentOverlay = 'none';
-let areaCircles = [];
-let transportLines = [];
-const ARISTA = { lat: 53.3493, lng: -6.2435 }; // Arista Networks, 2 George's Dock, IFSC, Dublin 1
-
-function setOverlay(type) {
-  currentOverlay = type;
-  ['none','transport','area','green'].forEach(t => {
-    document.getElementById('ovl-'+t).classList.toggle('active', t === type);
-  });
-  clearOverlays();
-  if (type === 'area') drawAreaOverlay();
-  if (type === 'transport') drawTransportOverlay();
-  if (type === 'green') drawGreenOverlay();
-}
-
-let greenLayer = null;
-function clearOverlays() {
-  areaCircles.forEach(c => c.remove()); areaCircles = [];
-  transportLines.forEach(l => { try { l.remove(); } catch(e){} }); transportLines = [];
-  if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
-  if (greenLayer) { map.removeLayer(greenLayer); greenLayer = null; }
-}
-
-function drawAreaOverlay() {
-  const located = houses.filter(h => h.lat);
-  if (!located.length) return;
-
-  const areas = located.map(h => parseFloat(h.area) || 80);
-  const maxArea = Math.max(...areas);
-  const minArea = Math.min(...areas);
-
-  located.forEach((h, i) => {
-    const sqm = parseFloat(h.area) || 80;
-    // Scale: 50m² = 150m radius, 200m² = 400m radius — clearly visible on map
-    const radius = 150 + ((sqm - minArea) / (Math.max(maxArea - minArea, 1))) * 250;
-    const c = L.circle([h.lat, h.lng], {
-      radius,
-      color: '#378ADD',
-      fillColor: '#378ADD',
-      fillOpacity: 0.18,
-      weight: 2,
-      opacity: 0.8
-    }).addTo(map);
-    // Always show label, not just on hover
-    c.bindTooltip(h.area ? `${sqm} m²` : 'Area unknown', {
-      permanent: true,
-      direction: 'top',
-      className: 'area-tip',
-      offset: [0, -8]
-    });
-    c.openTooltip();
-    areaCircles.push(c);
-  });
-}
+// ---- Transport overlay helpers ----
+const STOP_ICONS = { bus:'🚌', train:'🚆', luas:'🚊', ferry:'⛴' };
+const STOP_COLORS = { bus:'#0057B8', train:'#E8A000', luas:'#C8102E', ferry:'#0099CC' };
+const TYPE_LABELS = { bus:'Bus', train:'DART/Rail', luas:'Luas', ferry:'Ferry' };
 
 function makeStopIcon(type, highlight) {
-  const icons = { bus: '🚌', train: '🚆', luas: '🚊', ferry: '⛴' };
-  const colors = { bus: '#0057B8', train: '#E8A000', luas: '#C8102E', ferry: '#0099CC' };
-  const label = icons[type] || '🚌';
-  const bg = colors[type] || '#0057B8';
-  const ring = highlight ? `box-shadow:0 0 0 3px ${bg},0 2px 8px rgba(0,0,0,.4)` : 'box-shadow:0 1px 4px rgba(0,0,0,.3)';
+  const bg = STOP_COLORS[type]||'#0057B8';
+  const shadow = highlight ? `0 0 0 3px ${bg},0 2px 8px rgba(0,0,0,.4)` : '0 1px 4px rgba(0,0,0,.3)';
   return L.divIcon({
-    className: '',
-    html: `<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;${ring}">${label}</div>`,
-    iconSize: [26,26], iconAnchor: [13,13]
+    className:'',
+    html:`<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:${shadow}">${STOP_ICONS[type]||'🚌'}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13]
   });
+}
+
+function stopType(tags) {
+  if (tags.railway==='station') return 'train';
+  if (tags.railway==='tram_stop') return 'luas';
+  if (tags.amenity==='ferry_terminal') return 'ferry';
+  return 'bus';
 }
 
 async function fetchStopsNear(lat, lng) {
   const d = 0.012;
   const bbox = `${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
-  const query = `[out:json][timeout:15];
-(
-  node["highway"="bus_stop"](${bbox});
-  node["railway"="station"](${bbox});
-  node["railway"="tram_stop"](${bbox});
-  node["amenity"="ferry_terminal"](${bbox});
-);
-out body;`;
-  const r = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST', body: 'data=' + encodeURIComponent(query)
-  });
+  const q = `[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox});node["amenity"="ferry_terminal"](${bbox}););out body;`;
+  const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:'data='+encodeURIComponent(q) });
+  if (!r.ok) throw new Error('Overpass HTTP '+r.status);
   return (await r.json()).elements || [];
 }
 
-// Fetch route geometry from OSRM (public routing API) between two points
 async function fetchRoute(fromLat, fromLng, toLat, toLng) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
   try {
-    const r = await fetch(url);
+    const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
     const d = await r.json();
-    if (d.routes && d.routes[0]) return d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+    if (d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
   } catch(e) {}
   return null;
 }
 
-// Find route numbers that serve a stop by querying OSM relations
 async function fetchRoutesForStop(stopId) {
-  const query = `[out:json][timeout:10];
-node(${stopId});
-rel(bn)["route"~"bus|train|tram|light_rail"];
-out tags;`;
   try {
-    const r = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST', body: 'data=' + encodeURIComponent(query)
-    });
+    const q = `[out:json][timeout:10];node(${stopId});rel(bn)["route"~"bus|train|tram|light_rail"];out tags;`;
+    const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:'data='+encodeURIComponent(q) });
     const d = await r.json();
-    return (d.elements || []).map(e => e.tags.ref || e.tags.name || '').filter(Boolean).slice(0, 5);
+    return (d.elements||[]).map(e=>e.tags.ref||e.tags.name||'').filter(Boolean).slice(0,6);
   } catch(e) { return []; }
 }
 
 let hoverRoute = null;
 
-function stopType(tags) {
-  if (tags.railway === 'station') return 'train';
-  if (tags.railway === 'tram_stop') return 'luas';
-  if (tags.amenity === 'ferry_terminal') return 'ferry';
-  return 'bus';
+function attachStopHover(marker, stop, type, name) {
+  // Use requestAnimationFrame to guarantee element is in DOM
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const el = marker.getElement();
+      if (!el) { console.warn('No element for stop', name); return; }
+      el.style.cursor = 'pointer';
+
+      el.addEventListener('mouseenter', async () => {
+        marker.setIcon(makeStopIcon(type, true));
+        const km = (map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
+
+        // Immediate tooltip
+        marker.unbindTooltip();
+        marker.bindTooltip(
+          `<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span><br><i style="color:#bbb;font-size:11px">Loading routes…</i></div>`,
+          { permanent:true, direction:'top', opacity:1, offset:[0,-6] }
+        ).openTooltip();
+
+        // Route line
+        const coords = await fetchRoute(stop.lat, stop.lon, ARISTA.lat, ARISTA.lng);
+        if (coords) {
+          if (hoverRoute) hoverRoute.remove();
+          hoverRoute = L.polyline(coords, { color:STOP_COLORS[type]||'#0057B8', weight:5, opacity:0.8, dashArray:type==='bus'?null:'10,5' }).addTo(map);
+        }
+
+        // Route numbers
+        const routes = await fetchRoutesForStop(stop.id);
+        const routeStr = routes.length ? routes.join(', ') : '';
+        marker.unbindTooltip();
+        marker.bindTooltip(
+          `<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}${routeStr?' · '+routeStr:''}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
+          { permanent:true, direction:'top', opacity:1, offset:[0,-6] }
+        ).openTooltip();
+      });
+
+      el.addEventListener('mouseleave', () => {
+        marker.setIcon(makeStopIcon(type, false));
+        marker.unbindTooltip();
+        if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
+      });
+    });
+  });
 }
 
 async function drawTransportOverlay() {
   syncStatus('saving', 'Loading stops…');
 
   // Arista marker
-  const aristaMarker = L.marker([ARISTA.lat, ARISTA.lng], {
-    icon: L.divIcon({
-      className: '',
-      html: `<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`,
-      iconAnchor: [36, 14]
-    }), zIndexOffset: 1000
+  const am = L.marker([ARISTA.lat, ARISTA.lng], {
+    icon: L.divIcon({ className:'', html:`<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`, iconAnchor:[36,14] }),
+    zIndexOffset: 1000
   }).addTo(map);
-  transportLines.push(aristaMarker);
+  transportLines.push(am);
 
-  // Collect all unique stops across all properties + Arista
-  const allLocs = [...houses.filter(h => h.lat).map(h => ({ lat: h.lat, lng: h.lng })), { lat: ARISTA.lat, lng: ARISTA.lng }];
+  const allLocs = [...houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng})), {lat:ARISTA.lat,lng:ARISTA.lng}];
   const seen = new Set();
 
   for (const loc of allLocs) {
     try {
       const stops = await fetchStopsNear(loc.lat, loc.lng);
-      stops.slice(0, 10).forEach(stop => {
+      console.log(`Got ${stops.length} stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}`);
+      stops.slice(0, 12).forEach(stop => {
         if (seen.has(stop.id)) return;
         seen.add(stop.id);
-        const tags = stop.tags || {};
+        const tags = stop.tags||{};
         const type = stopType(tags);
-        const name = tags.name || tags['name:en'] || 'Stop';
-        const m = L.marker([stop.lat, stop.lon], {
-          icon: makeStopIcon(type, false),
-          title: name
-        }).addTo(map);
-
-        // Hover via DOM — more reliable than Leaflet events
-        const el = m.getElement ? m.getElement() : null;
-        const typeLabels = { bus: 'Bus', train: 'DART/Rail', luas: 'Luas', ferry: 'Ferry' };
-        const routeColors = { bus: '#0057B8', train: '#E8A000', luas: '#C8102E', ferry: '#0099CC' };
-
-        m.on('add', function() {
-          // Use setTimeout to ensure element is in DOM
-          const self = this;
-          setTimeout(() => {
-            const el2 = self.getElement();
-            if (!el2) return;
-            el2.style.cursor = 'pointer';
-
-            el2.addEventListener('mouseenter', async () => {
-            self.setIcon(makeStopIcon(type, true));
-            const km = (map.distance([stop.lat, stop.lon],[ARISTA.lat, ARISTA.lng])/1000).toFixed(1);
-
-            // Show immediate tooltip
-            self.unbindTooltip();
-            self.bindTooltip(
-              `<div style="font-size:12px;line-height:1.7;min-width:140px">
-                <b style="font-size:13px">${typeLabels[type]}</b><br>
-                ${name}<br>
-                <span style="color:#999">${km} km to Arista</span><br>
-                <span style="color:#bbb;font-size:11px">Loading routes…</span>
-              </div>`,
-              { permanent: true, direction: 'top', opacity: 1, offset: [0, -4] }
-            ).openTooltip();
-
-            // Fetch route to Arista
-            const coords = await fetchRoute(stop.lat, stop.lon, ARISTA.lat, ARISTA.lng);
-            if (coords) {
-              if (hoverRoute) hoverRoute.remove();
-              hoverRoute = L.polyline(coords, {
-                color: routeColors[type] || '#0057B8',
-                weight: 5, opacity: 0.8,
-                dashArray: type === 'bus' ? null : '10,5'
-              }).addTo(map);
-            }
-
-            // Fetch route numbers
-            const routes = await fetchRoutesForStop(stop.id);
-            const routeStr = routes.length ? routes.join(', ') : '—';
-            self.unbindTooltip();
-            self.bindTooltip(
-              `<div style="font-size:12px;line-height:1.7;min-width:140px">
-                <b style="font-size:13px">${typeLabels[type]} ${routeStr !== '—' ? routeStr : ''}</b><br>
-                ${name}<br>
-                <span style="color:#999">${km} km to Arista</span>
-              </div>`,
-              { permanent: true, direction: 'top', opacity: 1, offset: [0, -4] }
-            ).openTooltip();
-          });
-
-            el2.addEventListener('mouseleave', () => {
-              self.setIcon(makeStopIcon(type, false));
-              self.unbindTooltip();
-              if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
-            });
-          }, 100); // end setTimeout
-        });
-
+        const name = tags.name||tags['name:en']||'Stop';
+        const m = L.marker([stop.lat, stop.lon], { icon:makeStopIcon(type,false), title:name }).addTo(map);
+        attachStopHover(m, stop, type, name);
         transportLines.push(m);
       });
-    } catch(e) { console.warn('Stops fetch failed', e); }
+    } catch(e) { console.error('Stops fetch failed:', e); }
   }
-  syncStatus('ok', 'Transport loaded — hover a stop to see routes');
+  syncStatus('ok', 'Hover a stop to see route to Arista');
 }
-
 async function quickDelete(id) {
   if (!confirm('Remove this property?')) return;
   houses = houses.filter(x => x.id !== id);
