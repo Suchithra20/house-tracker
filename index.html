@@ -92,6 +92,8 @@ textarea:focus { outline: none; border-color: #aaa; }
 .tc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .mactions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+.area-tip { background: rgba(55,138,221,0.9) !important; color: #fff !important; border: none !important; font-size: 11px !important; font-weight: 600 !important; padding: 3px 7px !important; border-radius: 4px !important; }
+.area-tip::before { display: none !important; }
 </style>
 </head>
 <body>
@@ -467,7 +469,7 @@ async function relocate(id) {
 let currentOverlay = 'none';
 let areaCircles = [];
 let transportLines = [];
-const ARISTA = { lat: 53.3762, lng: -6.2591 }; // Arista Networks, Sandyford Rd area Dublin
+const ARISTA = { lat: 53.3488, lng: -6.2428 }; // Arista Networks, 2 George's Dock, IFSC, Dublin 1
 
 function setOverlay(type) {
   currentOverlay = type;
@@ -485,21 +487,35 @@ function clearOverlays() {
 }
 
 function drawAreaOverlay() {
+  const withArea = houses.filter(h => h.lat && h.area && parseFloat(h.area) > 0);
+  const noArea = houses.filter(h => h.lat && (!h.area || parseFloat(h.area) <= 0));
+
+  if (withArea.length === 0 && noArea.length === 0) return;
+
+  // Find min/max for relative scaling
+  const areas = withArea.map(h => parseFloat(h.area));
+  const maxArea = areas.length ? Math.max(...areas) : 100;
+  const minArea = areas.length ? Math.min(...areas) : 50;
+
   houses.forEach(h => {
-    if (!h.lat || !h.area) return;
-    const sqm = parseFloat(h.area);
-    if (!sqm) return;
-    // radius in meters: scale so 100m² = 80m radius
-    const radius = Math.sqrt(sqm / Math.PI) * 8;
+    if (!h.lat) return;
+    const sqm = parseFloat(h.area) || null;
+    // Scale radius: min 60m, max 200m, relative to collection
+    let radius;
+    if (sqm) {
+      radius = 60 + ((sqm - minArea) / (Math.max(maxArea - minArea, 1))) * 140;
+    } else {
+      radius = 60; // default if no area set
+    }
     const c = L.circle([h.lat, h.lng], {
       radius,
       color: '#378ADD',
       fillColor: '#378ADD',
-      fillOpacity: 0.15,
-      weight: 1.5,
-      opacity: 0.5
+      fillOpacity: 0.18,
+      weight: 2,
+      opacity: 0.7
     }).addTo(map);
-    c.bindTooltip(`${sqm} m²`, { permanent: false, direction: 'top' });
+    c.bindTooltip(sqm ? `${sqm} m²` : 'No floor area set', { permanent: true, direction: 'top', className: 'area-tip' });
     areaCircles.push(c);
   });
 }
