@@ -7,120 +7,123 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; height: 100vh; display: flex; flex-direction: column; }
-.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: #fff; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
-.header h1 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
-.add-btn { font-size: 13px; padding: 7px 14px; border: 1px solid #ccc; border-radius: 8px; background: #1a1a1a; color: #fff; cursor: pointer; font-weight: 500; }
-.add-btn:hover { background: #333; }
-.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
-.sync-dot.ok { background: #1D9E75; }
-.sync-dot.err { background: #e74c3c; }
-.sync-dot.saving { background: #C8823A; }
-.main { display: flex; flex: 1; overflow: hidden; }
-#map { flex: 1; z-index: 1; }
-.sidebar { width: 280px; background: #fff; border-left: 1px solid #e5e3dc; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
-.sidebar-hdr { padding: 10px 14px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
-.hlist { overflow-y: auto; flex: 1; }
-.hcard { padding: 11px 14px; border-bottom: 1px solid #f0ede6; cursor: pointer; transition: background .1s; }
-.hcard:hover { background: #faf9f6; }
-.hcard.active { background: #eef4ff; border-left: 3px solid #378ADD; padding-left: 11px; }
-.hprice { font-size: 13px; font-weight: 600; color: #1a1a1a; }
-.haddr { font-size: 11px; color: #888; margin-top: 2px; line-height: 1.4; }
-.hmeta { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #999; align-items: center; flex-wrap: wrap; }
-.sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.empty { padding: 20px 14px; font-size: 13px; color: #aaa; line-height: 1.6; }
-.hcard { position: relative; }
-.hcard-del { display: none; position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fff5f4; border: 1px solid #f5c6c2; color: #c0392b; border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; z-index: 2; }
-.hcard:hover .hcard-del { display: block; }
-.hcard-del:hover { background: #ffe0de; }
-.overlay-bar { display: flex; gap: 6px; align-items: center; padding: 7px 14px; background: #fff; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
-.overlay-bar span { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
-.ovl-btn { font-size: 12px; padding: 5px 12px; border: 1px solid #ddd; border-radius: 20px; background: #fff; color: #555; cursor: pointer; transition: all .15s; }
-.ovl-btn:hover { border-color: #999; color: #1a1a1a; }
-.ovl-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-.thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-.detail { display: none; position: absolute; inset: 0; background: #f5f4f0; overflow-y: auto; z-index: 10; }
-.detail.open { display: block; }
-.detail-inner { max-width: 680px; margin: 0 auto; padding: 20px; }
-.back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #666; cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; }
-.back:hover { color: #1a1a1a; }
-.dcard { background: #fff; border-radius: 12px; border: 1px solid #e5e3dc; padding: 20px; margin-bottom: 16px; }
-.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 16px; }
-.photo-item { position: relative; aspect-ratio: 4/3; border-radius: 8px; overflow: hidden; background: #f0ede6; }
-.photo-item img { width: 100%; height: 100%; object-fit: cover; }
-.photo-del { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.55); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.photo-add { border: 2px dashed #ddd; border-radius: 8px; aspect-ratio: 4/3; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #aaa; font-size: 12px; gap: 4px; }
-.photo-add:hover { border-color: #999; color: #666; }
-.photo-add span { font-size: 22px; }
-.edit-field { margin-bottom: 12px; }
-.edit-field label { font-size: 11px; color: #999; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
-.edit-field input, .edit-field select { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a1a; background: #fff; }
-.edit-field input:focus { outline: none; border-color: #999; }
-.edit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.view-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-.dstat { background: #f5f4f0; border-radius: 8px; padding: 10px 12px; }
-.dstat label { font-size: 10px; color: #999; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .04em; }
-.dstat span { font-size: 14px; font-weight: 600; color: #1a1a1a; }
-.section-label { font-size: 11px; color: #999; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; margin-top: 14px; }
-.stars { display: flex; gap: 4px; margin-bottom: 4px; }
-.star { font-size: 22px; cursor: pointer; color: #ddd; line-height: 1; transition: color .1s; }
-.star.on { color: #C8823A; }
-textarea { width: 100%; border: 1px solid #e0ddd6; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; background: #fff; color: #1a1a1a; resize: vertical; min-height: 80px; line-height: 1.5; margin-top: 6px; }
-textarea:focus { outline: none; border-color: #aaa; }
-.dlink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #378ADD; margin-top: 12px; text-decoration: none; }
-.dlink:hover { text-decoration: underline; }
-.dfooter { margin-top: 16px; padding-top: 14px; border-top: 1px solid #f0ede6; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.ss { font-size: 13px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
-.btn { padding: 7px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; background: #fff; color: #555; font-family: inherit; }
-.btn:hover { background: #f5f4f0; }
-.btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; font-weight: 500; }
-.btn.primary:hover { background: #333; }
-.btn.danger { color: #c0392b; border-color: #f5c6c2; }
-.btn.danger:hover { background: #fff5f4; }
-.dprice-view { font-size: 22px; font-weight: 700; color: #1a1a1a; }
-.daddr-view { font-size: 13px; color: #888; margin-top: 2px; margin-bottom: 16px; }
-.dcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-.modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); align-items: center; justify-content: center; z-index: 100; }
-.modal-wrap.open { display: flex; }
-.modal { background: #fff; border-radius: 14px; padding: 22px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.15); max-height: 90vh; overflow-y: auto; }
-.modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-.field { margin-bottom: 12px; }
-.field label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
-.field input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a1a; }
-.field input:focus { outline: none; border-color: #999; }
-.tc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.mactions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-.hint { font-size: 11px; color: #aaa; margin-top: 4px; }
-.area-tip { background: rgba(55,138,221,0.9) !important; color: #fff !important; border: none !important; font-size: 11px !important; font-weight: 600 !important; padding: 3px 7px !important; border-radius: 4px !important; }
-.area-tip::before { display: none !important; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#fff;border-bottom:1px solid #e5e3dc;flex-shrink:0;z-index:20;position:relative}
+.header h1{font-size:14px;font-weight:600;color:#1a1a1a}
+.add-btn{font-size:12px;padding:6px 12px;border:1px solid #ccc;border-radius:8px;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:500}
+.add-btn:hover{background:#333}
+.fix-btn{font-size:12px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#555;color:#fff;cursor:pointer}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sync-dot.ok{background:#1D9E75}.sync-dot.err{background:#e74c3c}.sync-dot.saving{background:#C8823A}
+
+/* Overlay bar */
+.overlay-bar{display:flex;gap:6px;align-items:center;padding:7px 14px;background:#fff;border-bottom:1px solid #e5e3dc;flex-shrink:0;z-index:20;position:relative}
+.overlay-bar span{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
+.ovl-btn{font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:20px;background:#fff;color:#555;cursor:pointer;transition:all .15s;user-select:none}
+.ovl-btn:hover{border-color:#999;color:#1a1a1a}
+.ovl-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+#map{flex:1;z-index:1}
+.sidebar{width:270px;background:#fff;border-left:1px solid #e5e3dc;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;z-index:2}
+.sidebar-hdr{padding:9px 13px;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e5e3dc;flex-shrink:0}
+.hlist{overflow-y:auto;flex:1}
+.hcard{padding:10px 13px;border-bottom:1px solid #f0ede6;cursor:pointer;transition:background .1s;position:relative}
+.hcard:hover{background:#faf9f6}
+.hcard.active{background:#eef4ff;border-left:3px solid #378ADD;padding-left:10px}
+.hprice{font-size:13px;font-weight:600;color:#1a1a1a}
+.haddr{font-size:11px;color:#888;margin-top:2px;line-height:1.4}
+.hmeta{display:flex;gap:7px;margin-top:4px;font-size:11px;color:#999;align-items:center;flex-wrap:wrap}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.hcard-del{display:none;position:absolute;top:50%;right:10px;transform:translateY(-50%);background:#fff5f4;border:1px solid #f5c6c2;color:#c0392b;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;z-index:2}
+.hcard:hover .hcard-del{display:block}
+.hcard-del:hover{background:#ffe0de}
+.thumb{width:38px;height:38px;object-fit:cover;border-radius:6px;flex-shrink:0}
+.empty{padding:18px 13px;font-size:13px;color:#aaa;line-height:1.6}
+
+/* Detail */
+.detail{display:none;position:absolute;inset:0;background:#f5f4f0;overflow-y:auto;z-index:5}
+.detail.open{display:block}
+.detail-inner{max-width:680px;margin:0 auto;padding:18px}
+.back{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#666;cursor:pointer;border:none;background:none;padding:0;margin-bottom:14px}
+.back:hover{color:#1a1a1a}
+.dcard{background:#fff;border-radius:12px;border:1px solid #e5e3dc;padding:18px;margin-bottom:14px}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.photo-item{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#f0ede6}
+.photo-item img{width:100%;height:100%;object-fit:cover}
+.photo-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-add{border:2px dashed #ddd;border-radius:8px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#aaa;font-size:12px;gap:4px}
+.photo-add:hover{border-color:#999;color:#666}
+.photo-add span{font-size:20px}
+.edit-field{margin-bottom:10px}
+.edit-field label{font-size:11px;color:#999;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.edit-field input,.edit-field select{width:100%;border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#fff}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.view-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.dstat{background:#f5f4f0;border-radius:8px;padding:9px 11px}
+.dstat label{font-size:10px;color:#999;display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em}
+.dstat span{font-size:13px;font-weight:600;color:#1a1a1a}
+.section-label{font-size:11px;color:#999;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;margin-top:12px}
+.stars{display:flex;gap:4px;margin-bottom:4px}
+.star{font-size:21px;cursor:pointer;color:#ddd;line-height:1;transition:color .1s}
+.star.on{color:#C8823A}
+textarea{width:100%;border:1px solid #e0ddd6;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;background:#fff;color:#1a1a1a;resize:vertical;min-height:75px;line-height:1.5;margin-top:5px}
+.dlink{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#378ADD;margin-top:10px;text-decoration:none}
+.dlink:hover{text-decoration:underline}
+.dfooter{margin-top:14px;padding-top:12px;border-top:1px solid #f0ede6;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.ss{font-size:12px;padding:5px 9px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
+.btn{padding:6px 13px;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;background:#fff;color:#555;font-family:inherit}
+.btn:hover{background:#f5f4f0}
+.btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500}
+.btn.primary:hover{background:#333}
+.btn.danger{color:#c0392b;border-color:#f5c6c2}
+.btn.danger:hover{background:#fff5f4}
+.dprice-view{font-size:21px;font-weight:700;color:#1a1a1a}
+.daddr-view{font-size:13px;color:#888;margin-top:2px;margin-bottom:14px}
+.dcard-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+
+/* Modal */
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:200}
+.modal-wrap.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:20px;width:350px;box-shadow:0 8px 40px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto}
+.modal h2{font-size:14px;font-weight:600;margin-bottom:14px}
+.field{margin-bottom:10px}
+.field label{font-size:11px;color:#888;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.field input{width:100%;border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:#1a1a1a}
+.field input:focus{outline:none;border-color:#999}
+.tc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mactions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.hint{font-size:11px;color:#aaa;margin-top:3px}
+.area-tip{background:rgba(55,138,221,.9)!important;color:#fff!important;border:none!important;font-size:11px!important;font-weight:600!important;padding:3px 7px!important;border-radius:4px!important}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>🏠 House Tracker <span id="cnt" style="color:#888;font-weight:400;font-size:13px"></span></h1>
-  <div style="display:flex;gap:10px;align-items:center">
-    <div class="sync-dot" id="sync-dot" title="Sync status"></div>
+  <h1>🏠 House Tracker <span id="cnt" style="color:#888;font-weight:400;font-size:12px"></span></h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div class="sync-dot" id="sync-dot"></div>
     <span id="sync-label" style="font-size:11px;color:#aaa">Connecting…</span>
+    <button class="fix-btn" onclick="regeocodeAll()">📍 Fix pins</button>
     <button class="add-btn" onclick="openModal()">+ Add property</button>
-    <button class="add-btn" style="background:#555;margin-left:4px" onclick="regeocodeAll()" title="Fix all pin locations using Google">📍 Fix all pins</button>
   </div>
 </div>
 
-<div class="overlay-bar">
+<div class="overlay-bar" id="overlay-bar">
   <span>Overlay</span>
   <button class="ovl-btn active" id="ovl-none" onclick="setOverlay('none')">None</button>
   <button class="ovl-btn" id="ovl-transport" onclick="setOverlay('transport')">🚌 Transport</button>
   <button class="ovl-btn" id="ovl-area" onclick="setOverlay('area')">⬤ Floor area</button>
   <button class="ovl-btn" id="ovl-green" onclick="setOverlay('green')">🌿 Green spaces</button>
 </div>
+
 <div class="main" id="main-view">
   <div id="map"></div>
   <div class="sidebar">
     <div class="sidebar-hdr">Properties</div>
     <div class="hlist" id="hlist"></div>
-    <div class="empty" id="hempty">No properties yet.<br>Add a daft.ie or myhome.ie listing to get started.</div>
+    <div class="empty" id="hempty">No properties yet.<br>Add a Daft or MyHome listing to get started.</div>
   </div>
 </div>
 
@@ -136,11 +139,11 @@ textarea:focus { outline: none; border-color: #aaa; }
     <h2>Add property</h2>
     <div class="field"><label>Listing URL (Daft or MyHome)</label><input type="url" id="f-url" placeholder="https://www.daft.ie/..."></div>
     <div class="field"><label>Full address</label><input type="text" id="f-addr" placeholder="14 Maple Road, Drumcondra, Dublin 9"></div>
-    <div class="field"><label>Eircode</label><input type="text" id="f-eircode" placeholder="D09 X2K3" style="text-transform:uppercase"><div class="hint">Pins the property precisely on the map</div></div>
+    <div class="field"><label>Eircode</label><input type="text" id="f-eircode" placeholder="D09 X2K3" style="text-transform:uppercase"><div class="hint">Used to place pin accurately</div></div>
     <div class="field"><label>Asking price</label><input type="text" id="f-price" placeholder="€395,000"></div>
     <div class="tc">
-      <div class="field"><label>Beds</label><input type="number" id="f-beds" min="1" max="10" placeholder="3"></div>
-      <div class="field"><label>Baths</label><input type="number" id="f-baths" min="1" max="10" placeholder="2"></div>
+      <div class="field"><label>Beds</label><input type="number" id="f-beds" min="1" max="10"></div>
+      <div class="field"><label>Baths</label><input type="number" id="f-baths" min="1" max="10"></div>
     </div>
     <div class="tc">
       <div class="field"><label>Floor area (m²)</label><input type="number" id="f-area" min="1" placeholder="85"></div>
@@ -156,150 +159,105 @@ textarea:focus { outline: none; border-color: #aaa; }
 <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
 
 <script>
+// ---- Config ----
 const SUPA_URL = 'https://ptcfdabyiuzgylmjluic.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0Y2ZkYWJ5aXV6Z3lsbWpsdWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMDc5NDEsImV4cCI6MjA5Njg4Mzk0MX0.bdn9GIWpfRzzFPRcqTm-k1DAH-N_QpiLvsveRHtAQw4';
-const HEADERS = { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
+const HEADERS = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+const GOOGLE_KEY = 'AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
+const ARISTA = {lat:53.3493, lng:-6.2435};
 
-const SC = { interested:'#1D9E75', viewing:'#C8823A', offered:'#378ADD', passed:'#9b9b9b' };
-const SL = { interested:'Interested', viewing:'Viewing', offered:'Offered', passed:'Passed' };
+const SC = {interested:'#1D9E75',viewing:'#C8823A',offered:'#378ADD',passed:'#9b9b9b'};
+const SL = {interested:'Interested',viewing:'Viewing',offered:'Offered',passed:'Passed'};
 
-let houses = [], markers = {}, activeId = null, editingId = null;
+let houses=[], markers={}, activeId=null, editingId=null;
 
-function syncStatus(state, msg) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = 'sync-dot ' + state;
-  lbl.textContent = msg;
+// ---- Sync indicator ----
+function syncStatus(state,msg){
+  document.getElementById('sync-dot').className='sync-dot '+state;
+  document.getElementById('sync-label').textContent=msg;
 }
 
-// ---- Supabase CRUD ----
-async function dbLoad() {
-  try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/houses?select=id,data&order=id.asc`, { headers: HEADERS });
-    if (!r.ok) {
-      const err = await r.text();
-      console.error('dbLoad error:', r.status, err);
-      throw new Error(err);
-    }
-    const rows = await r.json();
-    console.log('Loaded', rows.length, 'properties from Supabase');
-    houses = rows.map(row => ({ ...row.data, id: row.id }));
-    // Keep localStorage in sync as backup
-    try { localStorage.setItem('ht_backup', JSON.stringify(houses)); } catch(e) {}
-    syncStatus('ok', 'Synced');
-  } catch(e) {
-    console.error('Supabase load failed:', e);
-    // Fall back to localStorage backup
-    try {
-      const backup = JSON.parse(localStorage.getItem('ht_backup') || '[]');
-      if (backup.length) {
-        houses = backup;
-        syncStatus('err', 'Offline — showing cached data');
-        console.warn('Using localStorage backup:', backup.length, 'properties');
-        return;
-      }
-    } catch(e2) {}
-    syncStatus('err', 'Could not load — check Supabase RLS policies');
+// ---- Supabase ----
+async function dbLoad(){
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/houses?select=id,data&order=id.asc`,{headers:HEADERS});
+    if(!r.ok) throw new Error(await r.text());
+    const rows=await r.json();
+    houses=rows.map(row=>({...row.data,id:row.id}));
+    try{localStorage.setItem('ht_bk',JSON.stringify(houses));}catch(e){}
+    syncStatus('ok','Synced');
+  }catch(e){
+    console.error('Load failed:',e);
+    try{const bk=JSON.parse(localStorage.getItem('ht_bk')||'[]');if(bk.length){houses=bk;syncStatus('err','Offline — cached data');return;}}catch(e2){}
+    syncStatus('err','Load failed');
   }
 }
-
-async function dbUpsert(h) {
-  syncStatus('saving', 'Saving…');
-  // Always write to localStorage backup first
-  try { localStorage.setItem('ht_backup', JSON.stringify(houses)); } catch(e) {}
-  try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/houses`, {
-      method: 'POST',
-      headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ id: h.id, data: h })
-    });
-    if (!r.ok) throw new Error(await r.text());
-    syncStatus('ok', 'Saved');
-  } catch(e) {
-    syncStatus('err', 'Saved locally — sync failed');
-    console.error('dbUpsert failed:', e);
-  }
+async function dbUpsert(h){
+  syncStatus('saving','Saving…');
+  try{localStorage.setItem('ht_bk',JSON.stringify(houses));}catch(e){}
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/houses`,{method:'POST',headers:{...HEADERS,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:h.id,data:h})});
+    if(!r.ok) throw new Error(await r.text());
+    syncStatus('ok','Saved');
+  }catch(e){syncStatus('err','Save failed');console.error(e);}
 }
-
-async function dbDelete(id) {
-  syncStatus('saving', 'Deleting…');
-  try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/houses?id=eq.${id}`, { method: 'DELETE', headers: HEADERS });
-    if (!r.ok) throw new Error(await r.text());
-    syncStatus('ok', 'Saved');
-  } catch(e) {
-    syncStatus('err', 'Delete failed');
-  }
+async function dbDelete(id){
+  try{await fetch(`${SUPA_URL}/rest/v1/houses?id=eq.${id}`,{method:'DELETE',headers:HEADERS});}catch(e){}
 }
 
 // ---- Map ----
-const map = L.map('map').setView([53.3498, -6.2603], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19
-}).addTo(map);
+const map=L.map('map').setView([53.3498,-6.2603],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
 
-function makeIcon(color) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:14px;line-height:1">🏠</span></div>`,
-    iconSize:[32,32], iconAnchor:[16,32], popupAnchor:[0,-36]
-  });
+function makeIcon(color){
+  return L.divIcon({className:'',html:`<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:14px;line-height:1">🏠</span></div>`,iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-36]});
 }
-
-function placeMarker(h) {
-  if (!h.lat) return;
-  if (markers[h.id]) markers[h.id].remove();
-  const m = L.marker([h.lat, h.lng], { icon: makeIcon(SC[h.status||'interested']) })
-    .addTo(map)
+function placeMarker(h){
+  if(!h.lat) return;
+  if(markers[h.id]) markers[h.id].remove();
+  const m=L.marker([h.lat,h.lng],{icon:makeIcon(SC[h.status||'interested'])}).addTo(map)
     .bindPopup(`<b style="font-size:13px">${h.address||'Property'}</b><br><span style="color:#666;font-size:12px">${h.price?'€'+h.price:''}</span>`);
-  m.on('click', () => openDetail(h.id));
-  markers[h.id] = m;
+  m.on('click',()=>openDetail(h.id));
+  markers[h.id]=m;
 }
-
-const GOOGLE_KEY = 'AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
-
-async function geocode(h) {
-  if (h.lat) return;
-  const addr = (h.address || '').trim();
-  const eircode = h.eircode ? h.eircode.slice(0,3) + ' ' + h.eircode.slice(3) : '';
-  const q = eircode ? `${addr} ${eircode} Ireland` : `${addr} Ireland`;
-  try {
-    const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=ie&key=${GOOGLE_KEY}`);
-    const d = await r.json();
-    console.log('Geocode status:', d.status, d.results && d.results[0] && d.results[0].formatted_address);
-    if (d.status === 'OK' && d.results[0]) {
-      h.lat = d.results[0].geometry.location.lat;
-      h.lng = d.results[0].geometry.location.lng;
+function fitAll(){
+  const pts=houses.filter(h=>h.lat).map(h=>[h.lat,h.lng]);
+  if(pts.length>1) map.fitBounds(pts,{padding:[40,40]});
+  else if(pts.length===1) map.setView(pts[0],15);
+}
+async function geocode(h){
+  if(h.lat) return;
+  const addr=(h.address||'').trim();
+  const eircode=h.eircode?h.eircode.slice(0,3)+' '+h.eircode.slice(3):'';
+  const q=eircode?`${addr} ${eircode} Ireland`:`${addr} Ireland`;
+  try{
+    const r=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=ie&key=${GOOGLE_KEY}`);
+    const d=await r.json();
+    if(d.status==='OK'&&d.results[0]){
+      h.lat=d.results[0].geometry.location.lat;
+      h.lng=d.results[0].geometry.location.lng;
       await dbUpsert(h);
-    } else {
-      console.warn('Geocoding failed:', d.status, q);
     }
-  } catch(e) { console.error('Geocode error', e); }
-}
-
-function fitAll() {
-  const pts = houses.filter(h => h.lat).map(h => [h.lat, h.lng]);
-  if (pts.length > 1) map.fitBounds(pts, { padding:[40,40] });
-  else if (pts.length === 1) map.setView(pts[0], 15);
+  }catch(e){console.error('Geocode failed:',e);}
 }
 
 // ---- Render list ----
-function render() {
-  const list = document.getElementById('hlist');
-  const empty = document.getElementById('hempty');
-  document.getElementById('cnt').textContent = houses.length ? `(${houses.length})` : '';
-  if (!houses.length) { list.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display = 'none';
-  list.innerHTML = houses.map(h => {
-    const s = h.status || 'interested';
-    const thumb = h.photos && h.photos[0] ? `<img class="thumb" src="${h.photos[0]}" alt="">` : '';
+function render(){
+  const list=document.getElementById('hlist');
+  const empty=document.getElementById('hempty');
+  document.getElementById('cnt').textContent=houses.length?`(${houses.length})`:'';
+  if(!houses.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=houses.map(h=>{
+    const s=h.status||'interested';
+    const thumb=h.photos&&h.photos[0]?`<img class="thumb" src="${h.photos[0]}" alt="">`:'';
     return `<div class="hcard${activeId===h.id?' active':''}" onclick="openDetail('${h.id}')">
-      <div style="display:flex;gap:10px;align-items:flex-start">
+      <div style="display:flex;gap:9px;align-items:flex-start">
         ${thumb}
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between">
             <div class="hprice">${h.price?'€'+h.price:'TBC'}</div>
-            <div class="sdot" style="background:${SC[s]};margin-top:4px"></div>
+            <div class="sdot" style="background:${SC[s]};margin-top:3px"></div>
           </div>
           <div class="haddr">${h.address||'No address'}</div>
           <div class="hmeta">
@@ -316,49 +274,58 @@ function render() {
 }
 
 // ---- Detail ----
-function openDetail(id) {
-  activeId = id; editingId = null;
+function openDetail(id){
+  activeId=id; editingId=null;
   renderDetail();
-  document.getElementById('main-view').style.display = 'none';
+  document.getElementById('main-view').style.display='none';
+  document.getElementById('overlay-bar').style.display='none';
   document.getElementById('detail-view').classList.add('open');
   render();
 }
+function closeDetail(){
+  activeId=null; editingId=null;
+  document.getElementById('main-view').style.display='flex';
+  document.getElementById('overlay-bar').style.display='flex';
+  document.getElementById('detail-view').classList.remove('open');
+  setTimeout(()=>map.invalidateSize(),50);
+  render();
+}
 
-function renderDetail() {
-  const h = houses.find(x => x.id === activeId);
-  if (!h) return;
-  const s = h.status || 'interested';
-  const photos = h.photos || [];
-  const photoGridHTML = `<div class="photo-grid">
-    ${photos.map((p,i) => `<div class="photo-item"><img src="${p}" alt=""><button class="photo-del" onclick="deletePhoto('${h.id}',${i})">×</button></div>`).join('')}
+function renderDetail(){
+  const h=houses.find(x=>x.id===activeId);
+  if(!h) return;
+  const s=h.status||'interested';
+  const photos=h.photos||[];
+  const photoGrid=`<div class="photo-grid">
+    ${photos.map((p,i)=>`<div class="photo-item"><img src="${p}" alt=""><button class="photo-del" onclick="deletePhoto('${h.id}',${i})">×</button></div>`).join('')}
     <div class="photo-add" onclick="triggerPhotoUpload('${h.id}')"><span>+</span><div>Add photos</div></div>
   </div>`;
 
-  if (editingId === h.id) {
-    document.getElementById('dcontent').innerHTML = `<div class="dcard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+  if(editingId===h.id){
+    document.getElementById('dcontent').innerHTML=`<div class="dcard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div style="font-size:14px;font-weight:600">Edit property</div>
         <button class="btn" onclick="cancelEdit()">Cancel</button>
       </div>
-      ${photoGridHTML}
+      ${photoGrid}
       <div class="edit-grid">
         <div class="edit-field" style="grid-column:1/-1"><label>Address</label><input id="e-addr" value="${esc(h.address||'')}"></div>
         <div class="edit-field" style="grid-column:1/-1"><label>Listing URL</label><input type="url" id="e-url" value="${esc(h.url||'')}"></div>
         <div class="edit-field"><label>Price</label><input id="e-price" value="${esc(h.price||'')}"></div>
         <div class="edit-field"><label>Eircode</label><input id="e-eircode" value="${esc(h.eircode||'')}" style="text-transform:uppercase"></div>
-        <div class="edit-field"><label>Floor area (m²)</label><input type="number" id="e-area" value="${esc(h.area||'')}" min="1"></div>
         <div class="edit-field"><label>BER</label><input id="e-ber" value="${esc(h.ber||'')}"></div>
-        <div class="edit-field"><label>Beds</label><input type="number" id="e-beds" value="${esc(h.beds||'')}" min="1" max="20"></div>
-        <div class="edit-field"><label>Baths</label><input type="number" id="e-baths" value="${esc(h.baths||'')}" min="1" max="20"></div>
+        <div class="edit-field"><label>Beds</label><input type="number" id="e-beds" value="${esc(h.beds||'')}"></div>
+        <div class="edit-field"><label>Baths</label><input type="number" id="e-baths" value="${esc(h.baths||'')}"></div>
+        <div class="edit-field"><label>Floor area (m²)</label><input type="number" id="e-area" value="${esc(h.area||'')}"></div>
         <div class="edit-field"><label>Status</label>
           <select id="e-status">${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}</select>
         </div>
       </div>
       <button class="btn primary" onclick="saveEdit('${h.id}')">Save changes</button>
     </div>`;
-  } else {
-    document.getElementById('dcontent').innerHTML = `<div class="dcard">
-      ${photoGridHTML}
+  }else{
+    document.getElementById('dcontent').innerHTML=`<div class="dcard">
+      ${photoGrid}
       <div class="dcard-top">
         <div>
           <div class="dprice-view">${h.price?'€'+h.price:'Price TBC'}</div>
@@ -374,14 +341,14 @@ function renderDetail() {
         <div class="dstat"><label>Baths</label><span>${h.baths||'—'}</span></div>
         <div class="dstat"><label>BER</label><span>${h.ber||'—'}</span></div>
         <div class="dstat"><label>Eircode</label><span>${h.eircode?h.eircode.slice(0,3)+' '+h.eircode.slice(3):'—'}</span></div>
+        <div class="dstat"><label>Floor area</label><span>${h.area?h.area+' m²':'—'}</span></div>
         <div class="dstat"><label>Source</label><span>${h.source||'—'}</span></div>
-        <div class="dstat"><label>Photos</label><span>${photos.length}</span></div>
       </div>
       <div class="section-label">Gut feeling</div>
       <div class="stars" id="st-${h.id}">${[1,2,3,4,5].map(n=>`<span class="star${(h.gut||0)>=n?' on':''}" onclick="setGut('${h.id}',${n})">★</span>`).join('')}</div>
       <div class="section-label">Notes</div>
-      <textarea onchange="setNotes('${h.id}',this.value)" placeholder="First impressions, things to check, pros and cons…">${h.notes||''}</textarea>
-      ${h.url?`<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing site'}</a>`:''}
+      <textarea onchange="setNotes('${h.id}',this.value)" placeholder="Impressions, things to check…">${h.notes||''}</textarea>
+      ${h.url?`<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing'}</a>`:''}
       <div class="dfooter">
         <button class="btn" onclick="relocate('${h.id}')">📍 Re-locate pin</button>
         <button class="btn danger" onclick="removeHouse('${h.id}')">Remove</button>
@@ -390,357 +357,304 @@ function renderDetail() {
   }
 }
 
-function esc(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function startEdit(id) { editingId = id; renderDetail(); }
-function cancelEdit() { editingId = null; renderDetail(); }
+function esc(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function startEdit(id){editingId=id;renderDetail();}
+function cancelEdit(){editingId=null;renderDetail();}
 
-async function saveEdit(id) {
-  const h = houses.find(x => x.id === id);
-  if (!h) return;
-  const newEircode = document.getElementById('e-eircode').value.trim().toUpperCase().replace(/\s/g,'');
-  const addrChanged = document.getElementById('e-addr').value.trim() !== h.address;
-  const eircodeChanged = newEircode !== h.eircode;
-  h.address = document.getElementById('e-addr').value.trim();
-  h.url = document.getElementById('e-url').value.trim();
-  h.price = document.getElementById('e-price').value.replace(/[€,\s]/g,'');
-  h.eircode = newEircode;
-  h.area = document.getElementById('e-area').value;
-  h.ber = document.getElementById('e-ber').value.trim().toUpperCase();
-  h.beds = document.getElementById('e-beds').value;
-  h.baths = document.getElementById('e-baths').value;
-  h.status = document.getElementById('e-status').value;
-  if (addrChanged || eircodeChanged) { h.lat = null; h.lng = null; }
+async function saveEdit(id){
+  const h=houses.find(x=>x.id===id);
+  if(!h) return;
+  const newEircode=document.getElementById('e-eircode').value.trim().toUpperCase().replace(/\s/g,'');
+  const addrChanged=document.getElementById('e-addr').value.trim()!==h.address;
+  const eircodeChanged=newEircode!==h.eircode;
+  h.address=document.getElementById('e-addr').value.trim();
+  h.url=document.getElementById('e-url').value.trim();
+  h.price=document.getElementById('e-price').value.replace(/[€,\s]/g,'');
+  h.eircode=newEircode;
+  h.area=document.getElementById('e-area').value;
+  h.ber=document.getElementById('e-ber').value.trim().toUpperCase();
+  h.beds=document.getElementById('e-beds').value;
+  h.baths=document.getElementById('e-baths').value;
+  h.status=document.getElementById('e-status').value;
+  if(addrChanged||eircodeChanged){h.lat=null;h.lng=null;}
   await dbUpsert(h);
-  editingId = null; renderDetail(); render();
-  if (!h.lat) { await geocode(h); } placeMarker(h); render();
+  editingId=null;renderDetail();render();
+  if(!h.lat){await geocode(h);}
+  placeMarker(h);render();
 }
 
 // ---- Photos ----
-let _photoTargetId = null;
-function triggerPhotoUpload(id) { _photoTargetId = id; document.getElementById('photo-input').click(); }
-
-function handlePhotos(e) {
-  const h = houses.find(x => x.id === _photoTargetId);
-  if (!h) return;
-  if (!h.photos) h.photos = [];
-  const files = Array.from(e.target.files);
-  let done = 0;
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = async ev => {
-      h.photos.push(ev.target.result);
-      done++;
-      if (done === files.length) { await dbUpsert(h); renderDetail(); render(); }
-    };
+let _photoTargetId=null;
+function triggerPhotoUpload(id){_photoTargetId=id;document.getElementById('photo-input').click();}
+function handlePhotos(e){
+  const h=houses.find(x=>x.id===_photoTargetId);
+  if(!h) return;
+  if(!h.photos) h.photos=[];
+  const files=Array.from(e.target.files);
+  let done=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=async ev=>{h.photos.push(ev.target.result);done++;if(done===files.length){await dbUpsert(h);renderDetail();render();}};
     reader.readAsDataURL(file);
   });
-  e.target.value = '';
+  e.target.value='';
+}
+async function deletePhoto(id,idx){
+  const h=houses.find(x=>x.id===id);
+  if(!h||!h.photos) return;
+  h.photos.splice(idx,1);
+  await dbUpsert(h);renderDetail();render();
 }
 
-async function deletePhoto(id, idx) {
-  const h = houses.find(x => x.id === id);
-  if (!h || !h.photos) return;
-  h.photos.splice(idx, 1);
-  await dbUpsert(h); renderDetail(); render();
+// ---- House actions ----
+async function quickDelete(id){
+  if(!confirm('Remove this property?')) return;
+  houses=houses.filter(x=>x.id!==id);
+  if(markers[id]){markers[id].remove();delete markers[id];}
+  await dbDelete(id);render();
+  if(currentOverlay!=='none'){clearOverlays();setOverlay(currentOverlay);}
+}
+async function removeHouse(id){
+  if(!confirm('Remove this property?')) return;
+  houses=houses.filter(x=>x.id!==id);
+  if(markers[id]){markers[id].remove();delete markers[id];}
+  await dbDelete(id);closeDetail();
+}
+async function setStatus(id,val){
+  const h=houses.find(x=>x.id===id);if(!h) return;
+  h.status=val;await dbUpsert(h);render();
+  if(markers[id]) markers[id].setIcon(makeIcon(SC[val]));
+}
+async function setGut(id,val){
+  const h=houses.find(x=>x.id===id);if(!h) return;
+  h.gut=val;await dbUpsert(h);
+  document.querySelectorAll('#st-'+id+' .star').forEach((s,i)=>s.classList.toggle('on',i<val));
+}
+async function setNotes(id,val){const h=houses.find(x=>x.id===id);if(h){h.notes=val;await dbUpsert(h);}}
+
+async function regeocodeAll(){
+  if(!confirm('Re-geocode all pins using Google?')) return;
+  syncStatus('saving','Re-locating…');
+  for(const h of houses){h.lat=null;h.lng=null;await geocode(h);if(h.lat) placeMarker(h);}
+  fitAll();render();syncStatus('ok','All pins updated');
+}
+async function relocate(id){
+  const h=houses.find(x=>x.id===id);if(!h) return;
+  h.lat=null;h.lng=null;syncStatus('saving','Locating…');
+  await geocode(h);
+  if(h.lat){placeMarker(h);map.setView([h.lat,h.lng],16);syncStatus('ok','Pin updated');}
+  else syncStatus('err','Could not locate — check address');
 }
 
-// ---- Overlays ----
-let currentOverlay = 'none';
-let areaCircles = [];
-let transportLines = [];
-let greenLayer = null;
-let hoverRouteLayer = null;
-const ARISTA = { lat: 53.3493, lng: -6.2435 }; // 2 George's Dock, IFSC, Dublin 1
+// ---- Modal ----
+function openModal(){document.getElementById('modal').classList.add('open');}
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-area','f-ber'].forEach(id=>document.getElementById(id).value='');
+  setTimeout(()=>map.invalidateSize(),200);
+}
+async function addHouse(){
+  const url=document.getElementById('f-url').value.trim();
+  const addr=document.getElementById('f-addr').value.trim();
+  const eircode=document.getElementById('f-eircode').value.trim().toUpperCase().replace(/\s/g,'');
+  if(!addr&&!url&&!eircode){alert('Please enter at least an address');return;}
+  const price=document.getElementById('f-price').value.replace(/[€,\s]/g,'');
+  const source=url.includes('daft.ie')?'Daft.ie':url.includes('myhome.ie')?'MyHome.ie':'';
+  const h={id:Date.now().toString(),url,address:addr,eircode,price,
+    beds:document.getElementById('f-beds').value,
+    baths:document.getElementById('f-baths').value,
+    area:document.getElementById('f-area').value,
+    ber:document.getElementById('f-ber').value.trim().toUpperCase(),
+    source,status:'interested',gut:0,notes:'',photos:[]};
+  houses.push(h);
+  await dbUpsert(h);closeModal();render();
+  syncStatus('saving','Locating pin…');
+  await geocode(h);
+  if(h.lat) placeMarker(h);
+  fitAll();render();syncStatus('ok','Saved');
+}
 
-function setOverlay(type) {
-  currentOverlay = type;
-  ['none','transport','area','green'].forEach(t => {
-    const el = document.getElementById('ovl-'+t);
-    if (el) el.classList.toggle('active', t === type);
+// ========== OVERLAYS ==========
+let currentOverlay='none';
+let areaCircles=[];
+let transportLines=[];
+let greenLayer=null;
+let hoverRouteLayer=null;
+
+function setOverlay(type){
+  console.log('setOverlay called:', type);
+  currentOverlay=type;
+  ['none','transport','area','green'].forEach(t=>{
+    const el=document.getElementById('ovl-'+t);
+    if(el) el.classList.toggle('active',t===type);
   });
   clearOverlays();
-  if (type === 'area') drawAreaOverlay();
-  if (type === 'transport') drawTransportOverlay();
-  if (type === 'green') drawGreenOverlay();
+  if(type==='area') drawAreaOverlay();
+  else if(type==='transport') drawTransportOverlay();
+  else if(type==='green') drawGreenOverlay();
 }
 
-function clearOverlays() {
-  areaCircles.forEach(c => { try { c.remove(); } catch(e){} });
-  areaCircles = [];
-  transportLines.forEach(l => { try { l.remove(); } catch(e){} });
-  transportLines = [];
-  if (hoverRouteLayer) { try { hoverRouteLayer.remove(); } catch(e){} hoverRouteLayer = null; }
-  if (greenLayer) { try { map.removeLayer(greenLayer); } catch(e){} greenLayer = null; }
+function clearOverlays(){
+  areaCircles.forEach(c=>{try{c.remove();}catch(e){}});areaCircles=[];
+  transportLines.forEach(l=>{try{l.remove();}catch(e){}});transportLines=[];
+  if(hoverRouteLayer){try{hoverRouteLayer.remove();}catch(e){}hoverRouteLayer=null;}
+  if(greenLayer){try{map.removeLayer(greenLayer);}catch(e){}greenLayer=null;}
 }
 
-function drawAreaOverlay() {
-  const located = houses.filter(h => h.lat);
-  if (!located.length) return;
-  const areas = located.map(h => parseFloat(h.area) || 80);
-  const maxArea = Math.max(...areas);
-  const minArea = Math.min(...areas);
-  located.forEach(h => {
-    const sqm = parseFloat(h.area) || 80;
-    const radius = 150 + ((sqm - minArea) / (Math.max(maxArea - minArea, 1))) * 250;
-    const c = L.circle([h.lat, h.lng], {
-      radius, color: '#378ADD', fillColor: '#378ADD', fillOpacity: 0.18, weight: 2, opacity: 0.8
-    }).addTo(map);
-    c.bindTooltip(h.area ? `${sqm} m²` : 'Area unknown', {
-      permanent: true, direction: 'top', offset: [0, -8]
-    });
+// -- Floor area overlay --
+function drawAreaOverlay(){
+  console.log('drawAreaOverlay, houses with lat:', houses.filter(h=>h.lat).length);
+  const located=houses.filter(h=>h.lat);
+  if(!located.length){syncStatus('ok','No pinned properties');return;}
+  const areas=located.map(h=>parseFloat(h.area)||80);
+  const maxArea=Math.max(...areas), minArea=Math.min(...areas);
+  located.forEach(h=>{
+    const sqm=parseFloat(h.area)||80;
+    const radius=150+((sqm-minArea)/(Math.max(maxArea-minArea,1)))*250;
+    const c=L.circle([h.lat,h.lng],{radius,color:'#378ADD',fillColor:'#378ADD',fillOpacity:0.2,weight:2,opacity:0.8}).addTo(map);
+    c.bindTooltip(h.area?`${sqm} m²`:'No area set',{permanent:true,direction:'top',offset:[0,-8]});
     c.openTooltip();
     areaCircles.push(c);
   });
+  syncStatus('ok','Floor area overlay active');
 }
 
-async function drawGreenOverlay() {
-  syncStatus('saving', 'Loading green spaces…');
-  const lats = houses.filter(h=>h.lat).map(h=>h.lat);
-  const lngs = houses.filter(h=>h.lat).map(h=>h.lng);
-  if (!lats.length) { syncStatus('ok','No properties pinned'); return; }
-  const pad = 0.04;
-  const bbox = `${Math.min(...lats)-pad},${Math.min(...lngs)-pad},${Math.max(...lats)+pad},${Math.max(...lngs)+pad}`;
-  const query = `[out:json][timeout:25];(way["leisure"="park"](${bbox});way["leisure"="nature_reserve"](${bbox});way["landuse"="grass"](${bbox});way["landuse"="recreation_ground"](${bbox});way["leisure"="garden"](${bbox});way["leisure"="pitch"](${bbox}););out geom;`;
-  try {
-    const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:'data='+encodeURIComponent(query) });
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    const d = await r.json();
-    const features = (d.elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>({
-      type:'Feature', properties:{ name:(el.tags&&el.tags.name)||'' },
-      geometry:{ type:'Polygon', coordinates:[el.geometry.map(p=>[p.lon,p.lat])] }
+// -- Green spaces overlay --
+async function drawGreenOverlay(){
+  const located=houses.filter(h=>h.lat);
+  if(!located.length){syncStatus('ok','No pinned properties');return;}
+  syncStatus('saving','Loading green spaces…');
+  const lats=located.map(h=>h.lat), lngs=located.map(h=>h.lng);
+  const pad=0.05;
+  const bbox=`${Math.min(...lats)-pad},${Math.min(...lngs)-pad},${Math.max(...lats)+pad},${Math.max(...lngs)+pad}`;
+  const q=`[out:json][timeout:25];(way["leisure"="park"](${bbox});way["leisure"="nature_reserve"](${bbox});way["landuse"="grass"](${bbox});way["landuse"="recreation_ground"](${bbox});way["leisure"="garden"](${bbox}););out geom;`;
+  try{
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const features=(d.elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>({
+      type:'Feature',properties:{name:(el.tags&&el.tags.name)||''},
+      geometry:{type:'Polygon',coordinates:[el.geometry.map(p=>[p.lon,p.lat])]}
     }));
-    greenLayer = L.geoJSON({ type:'FeatureCollection', features }, {
-      style:{ color:'#2d8a4e', fillColor:'#52b788', fillOpacity:0.3, weight:1.5, opacity:0.7 },
-      onEachFeature:(f,layer)=>{ if(f.properties.name) layer.bindTooltip('🌿 '+f.properties.name,{sticky:true}); }
+    greenLayer=L.geoJSON({type:'FeatureCollection',features},{
+      style:{color:'#2d8a4e',fillColor:'#52b788',fillOpacity:0.3,weight:1.5,opacity:0.7},
+      onEachFeature:(f,layer)=>{if(f.properties.name) layer.bindTooltip('🌿 '+f.properties.name,{sticky:true});}
     }).addTo(map);
-    syncStatus('ok', features.length+' green spaces loaded');
-  } catch(e) {
-    console.error('Green overlay failed:', e);
-    syncStatus('err', 'Could not load green spaces');
+    syncStatus('ok',features.length+' green spaces loaded');
+  }catch(e){
+    console.error('Green overlay failed:',e);
+    syncStatus('err','Could not load green spaces');
   }
 }
 
-// ---- Transport overlay helpers ----
-const STOP_ICONS = { bus:'🚌', train:'🚆', luas:'🚊', ferry:'⛴' };
-const STOP_COLORS = { bus:'#0057B8', train:'#E8A000', luas:'#C8102E', ferry:'#0099CC' };
-const TYPE_LABELS = { bus:'Bus', train:'DART/Rail', luas:'Luas', ferry:'Ferry' };
+// -- Transport overlay --
+const STOP_ICONS={bus:'🚌',train:'🚆',luas:'🚊',ferry:'⛴'};
+const STOP_COLORS={bus:'#0057B8',train:'#E8A000',luas:'#C8102E',ferry:'#0099CC'};
+const TYPE_LABELS={bus:'Bus',train:'DART/Rail',luas:'Luas',ferry:'Ferry'};
 
-function makeStopIcon(type, highlight) {
-  const bg = STOP_COLORS[type]||'#0057B8';
-  const shadow = highlight ? `0 0 0 3px ${bg},0 2px 8px rgba(0,0,0,.4)` : '0 1px 4px rgba(0,0,0,.3)';
-  return L.divIcon({
-    className:'',
-    html:`<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:${shadow}">${STOP_ICONS[type]||'🚌'}</div>`,
-    iconSize:[26,26], iconAnchor:[13,13]
-  });
+function makeStopIcon(type,highlight){
+  const bg=STOP_COLORS[type]||'#0057B8';
+  const sh=highlight?`0 0 0 3px ${bg},0 2px 8px rgba(0,0,0,.4)`:'0 1px 4px rgba(0,0,0,.3)';
+  return L.divIcon({className:'',html:`<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:${sh}">${STOP_ICONS[type]||'🚌'}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
 }
-
-function stopType(tags) {
-  if (tags.railway==='station') return 'train';
-  if (tags.railway==='tram_stop') return 'luas';
-  if (tags.amenity==='ferry_terminal') return 'ferry';
+function stopType(tags){
+  if(tags.railway==='station') return 'train';
+  if(tags.railway==='tram_stop') return 'luas';
+  if(tags.amenity==='ferry_terminal') return 'ferry';
   return 'bus';
 }
-
-async function fetchStopsNear(lat, lng) {
-  const d = 0.012;
-  const bbox = `${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
-  const q = `[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox});node["amenity"="ferry_terminal"](${bbox}););out body;`;
-  const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:'data='+encodeURIComponent(q) });
-  if (!r.ok) throw new Error('Overpass HTTP '+r.status);
-  return (await r.json()).elements || [];
+async function fetchStopsNear(lat,lng){
+  const d=0.012;
+  const bbox=`${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
+  const q=`[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
+  const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+  if(!r.ok) throw new Error('Overpass '+r.status);
+  return(await r.json()).elements||[];
 }
-
-async function fetchRoute(fromLat, fromLng, toLat, toLng) {
-  try {
-    const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
-    const d = await r.json();
-    if (d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-  } catch(e) {}
+async function fetchRoute(fromLat,fromLng,toLat,toLng){
+  try{
+    const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
+    const d=await r.json();
+    if(d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+  }catch(e){}
   return null;
 }
-
-async function fetchRoutesForStop(stopId) {
-  try {
-    const q = `[out:json][timeout:10];node(${stopId});rel(bn)["route"~"bus|train|tram|light_rail"];out tags;`;
-    const r = await fetch('https://overpass-api.de/api/interpreter', { method:'POST', body:'data='+encodeURIComponent(q) });
-    const d = await r.json();
-    return (d.elements||[]).map(e=>e.tags.ref||e.tags.name||'').filter(Boolean).slice(0,6);
-  } catch(e) { return []; }
+async function fetchRoutesForStop(stopId){
+  try{
+    const q=`[out:json][timeout:10];node(${stopId});rel(bn)["route"~"bus|train|tram|light_rail"];out tags;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+    const d=await r.json();
+    return(d.elements||[]).map(e=>e.tags.ref||e.tags.name||'').filter(Boolean).slice(0,6);
+  }catch(e){return[];}
 }
 
-
-function attachStopHover(marker, stop, type, name) {
-  // Use requestAnimationFrame to guarantee element is in DOM
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const el = marker.getElement();
-      if (!el) { console.warn('No element for stop', name); return; }
-      el.style.cursor = 'pointer';
-
-      el.addEventListener('mouseenter', async () => {
-        marker.setIcon(makeStopIcon(type, true));
-        const km = (map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
-
-        // Immediate tooltip
-        marker.unbindTooltip();
-        marker.bindTooltip(
-          `<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span><br><i style="color:#bbb;font-size:11px">Loading routes…</i></div>`,
-          { permanent:true, direction:'top', opacity:1, offset:[0,-6] }
-        ).openTooltip();
-
-        // Route line
-        const coords = await fetchRoute(stop.lat, stop.lon, ARISTA.lat, ARISTA.lng);
-        if (coords) {
-          if (hoverRouteLayer) hoverRouteLayer.remove();
-          hoverRouteLayer = L.polyline(coords, { color:STOP_COLORS[type]||'#0057B8', weight:5, opacity:0.8, dashArray:type==='bus'?null:'10,5' }).addTo(map);
-        }
-
-        // Route numbers
-        const routes = await fetchRoutesForStop(stop.id);
-        const routeStr = routes.length ? routes.join(', ') : '';
-        marker.unbindTooltip();
-        marker.bindTooltip(
-          `<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}${routeStr?' · '+routeStr:''}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
-          { permanent:true, direction:'top', opacity:1, offset:[0,-6] }
-        ).openTooltip();
-      });
-
-      el.addEventListener('mouseleave', () => {
-        marker.setIcon(makeStopIcon(type, false));
-        marker.unbindTooltip();
-        if (hoverRouteLayer) { hoverRouteLayer.remove(); hoverRouteLayer = null; }
-      });
+function attachStopHover(marker,stop,type,name){
+  // Double rAF ensures element is in DOM
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const el=marker.getElement();
+    if(!el){console.warn('No DOM element for',name);return;}
+    el.style.cursor='pointer';
+    el.addEventListener('mouseenter',async()=>{
+      marker.setIcon(makeStopIcon(type,true));
+      const km=(map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
+      marker.unbindTooltip();
+      marker.bindTooltip(`<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span><br><i style="color:#bbb;font-size:11px">Loading route…</i></div>`,{permanent:true,direction:'top',opacity:1,offset:[0,-6]}).openTooltip();
+      const coords=await fetchRoute(stop.lat,stop.lon,ARISTA.lat,ARISTA.lng);
+      if(coords){if(hoverRouteLayer) hoverRouteLayer.remove();hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);}
+      const routes=await fetchRoutesForStop(stop.id);
+      const routeStr=routes.length?routes.join(', '):'';
+      marker.unbindTooltip();
+      marker.bindTooltip(`<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}${routeStr?' · '+routeStr:''}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,{permanent:true,direction:'top',opacity:1,offset:[0,-6]}).openTooltip();
     });
-  });
+    el.addEventListener('mouseleave',()=>{
+      marker.setIcon(makeStopIcon(type,false));
+      marker.unbindTooltip();
+      if(hoverRouteLayer){hoverRouteLayer.remove();hoverRouteLayer=null;}
+    });
+  }));
 }
 
-async function drawTransportOverlay() {
-  syncStatus('saving', 'Loading stops…');
-
+async function drawTransportOverlay(){
+  console.log('drawTransportOverlay called');
+  syncStatus('saving','Loading stops…');
   // Arista marker
-  const am = L.marker([ARISTA.lat, ARISTA.lng], {
-    icon: L.divIcon({ className:'', html:`<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`, iconAnchor:[36,14] }),
-    zIndexOffset: 1000
+  const am=L.marker([ARISTA.lat,ARISTA.lng],{
+    icon:L.divIcon({className:'',html:`<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`,iconAnchor:[36,14]}),
+    zIndexOffset:1000
   }).addTo(map);
   transportLines.push(am);
 
-  const allLocs = [...houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng})), {lat:ARISTA.lat,lng:ARISTA.lng}];
-  const seen = new Set();
-
-  for (const loc of allLocs) {
-    try {
-      const stops = await fetchStopsNear(loc.lat, loc.lng);
+  const locs=[...houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng})),{lat:ARISTA.lat,lng:ARISTA.lng}];
+  const seen=new Set();
+  for(const loc of locs){
+    try{
+      const stops=await fetchStopsNear(loc.lat,loc.lng);
       console.log(`Got ${stops.length} stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}`);
-      stops.slice(0, 12).forEach(stop => {
-        if (seen.has(stop.id)) return;
+      stops.slice(0,12).forEach(stop=>{
+        if(seen.has(stop.id)) return;
         seen.add(stop.id);
-        const tags = stop.tags||{};
-        const type = stopType(tags);
-        const name = tags.name||tags['name:en']||'Stop';
-        const m = L.marker([stop.lat, stop.lon], { icon:makeStopIcon(type,false), title:name }).addTo(map);
-        attachStopHover(m, stop, type, name);
+        const tags=stop.tags||{};
+        const type=stopType(tags);
+        const name=tags.name||tags['name:en']||'Stop';
+        const m=L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
+        attachStopHover(m,stop,type,name);
         transportLines.push(m);
       });
-    } catch(e) { console.error('Stops fetch failed:', e); }
+    }catch(e){console.error('Stop fetch error:',e);}
   }
-  syncStatus('ok', 'Hover a stop to see route to Arista');
-}
-async function quickDelete(id) {
-  if (!confirm('Remove this property?')) return;
-  houses = houses.filter(x => x.id !== id);
-  if (markers[id]) { markers[id].remove(); delete markers[id]; }
-  await dbDelete(id);
-  if (currentOverlay !== 'none') { clearOverlays(); setOverlay(currentOverlay); }
-  render();
-}
-
-function closeDetail() {
-  activeId = null; editingId = null;
-  document.getElementById('main-view').style.display = 'flex';
-  document.getElementById('detail-view').classList.remove('open');
-  setTimeout(() => map.invalidateSize(), 50);
-  render();
-}
-
-async function setStatus(id, val) {
-  const h = houses.find(x => x.id === id);
-  if (!h) return;
-  h.status = val;
-  await dbUpsert(h); render();
-  if (markers[id]) markers[id].setIcon(makeIcon(SC[val]));
-}
-async function setGut(id, val) {
-  const h = houses.find(x => x.id === id);
-  if (!h) return;
-  h.gut = val;
-  await dbUpsert(h);
-  document.querySelectorAll('#st-'+id+' .star').forEach((s,i) => s.classList.toggle('on', i < val));
-}
-async function setNotes(id, val) {
-  const h = houses.find(x => x.id === id);
-  if (!h) return;
-  h.notes = val;
-  await dbUpsert(h);
-}
-async function removeHouse(id) {
-  if (!confirm('Remove this property?')) return;
-  houses = houses.filter(x => x.id !== id);
-  if (markers[id]) { markers[id].remove(); delete markers[id]; }
-  await dbDelete(id); closeDetail();
-}
-
-function openModal() { document.getElementById('modal').classList.add('open'); }
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-area','f-ber'].forEach(id => document.getElementById(id).value = '');
-  setTimeout(() => map.invalidateSize(), 200);
-}
-
-async function addHouse() {
-  const url = document.getElementById('f-url').value.trim();
-  const addr = document.getElementById('f-addr').value.trim();
-  const eircode = document.getElementById('f-eircode').value.trim().toUpperCase().replace(/\s/g,'');
-  if (!addr && !url && !eircode) { alert('Please enter at least an address or eircode'); return; }
-  const price = document.getElementById('f-price').value.replace(/[€,\s]/g,'');
-  const source = url.includes('daft.ie') ? 'Daft.ie' : url.includes('myhome.ie') ? 'MyHome.ie' : '';
-  const h = {
-    id: Date.now().toString(), url, address: addr, eircode, price,
-    beds: document.getElementById('f-beds').value,
-    baths: document.getElementById('f-baths').value,
-    ber: document.getElementById('f-ber').value.trim().toUpperCase(),
-    area: document.getElementById('f-area').value, source, status: 'interested', gut: 0, notes: '', photos: []
-  };
-  houses.push(h);
-  await dbUpsert(h); closeModal();
-  // Make sure map is visible and sized correctly before placing pin
-  setTimeout(() => map.invalidateSize(), 100);
-  render();
-  syncStatus('saving', 'Locating pin…');
-  await geocode(h);
-  if (h.lat) placeMarker(h);
-  else syncStatus('err', 'Could not locate — check address');
-  fitAll();
-  render();
-  syncStatus('ok', 'Saved');
+  syncStatus('ok','Hover a stop to see route to Arista');
 }
 
 // ---- Boot ----
-const BAD_LAT = 53.3498, BAD_LNG = -6.2603;
-function isBadCoord(h) {
-  if (!h.lat) return false;
-  return (Math.abs(h.lat - BAD_LAT) < 0.001 && Math.abs(h.lng - BAD_LNG) < 0.001);
-}
-
-(async () => {
+const BAD_LAT=53.3498,BAD_LNG=-6.2603;
+(async()=>{
   await dbLoad();
-  for (const h of houses) {
-    if (isBadCoord(h)) { h.lat = null; h.lng = null; }
+  for(const h of houses){
+    if(h.lat&&Math.abs(h.lat-BAD_LAT)<0.001&&Math.abs(h.lng-BAD_LNG)<0.001){h.lat=null;h.lng=null;}
     await geocode(h);
-    if (h.lat) placeMarker(h);
+    if(h.lat) placeMarker(h);
   }
-  fitAll();
-  render();
+  fitAll();render();
 })();
 </script>
 </body>
