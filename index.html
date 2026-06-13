@@ -614,40 +614,62 @@ async function drawTransportOverlay() {
           title: name
         }).addTo(map);
 
-        // On hover: fetch routes + draw road route to Arista
-        m.on('mouseover', async function() {
-          this.setIcon(makeStopIcon(type, true));
-          // Get route numbers
-          const routes = await fetchRoutesForStop(stop.id);
-          const routeLabel = routes.length ? `<b>${routes.join(', ')}</b> · ` : '';
-          const typeLabels = { bus: 'Bus', train: 'DART/Rail', luas: 'Luas', ferry: 'Ferry' };
+        // Hover via DOM — more reliable than Leaflet events
+        const el = m.getElement ? m.getElement() : null;
+        const typeLabels = { bus: 'Bus', train: 'DART/Rail', luas: 'Luas', ferry: 'Ferry' };
+        const routeColors = { bus: '#0057B8', train: '#E8A000', luas: '#C8102E', ferry: '#0099CC' };
 
-          // Draw road route to Arista
-          const coords = await fetchRoute(stop.lat, stop.lon, ARISTA.lat, ARISTA.lng);
-          if (coords) {
-            if (hoverRoute) hoverRoute.remove();
-            const colors2 = { bus: '#0057B8', train: '#E8A000', luas: '#C8102E', ferry: '#0099CC' };
-            hoverRoute = L.polyline(coords, {
-              color: colors2[type] || '#0057B8',
-              weight: 4,
-              opacity: 0.75,
-              dashArray: type === 'bus' ? null : '8,4'
-            }).addTo(map);
-            transportLines.push(hoverRoute);
-          }
+        m.on('add', function() {
+          const el2 = this.getElement();
+          if (!el2) return;
+          el2.style.cursor = 'pointer';
 
-          // Show tooltip with route info
-          const km = (map.distance([stop.lat, stop.lon],[ARISTA.lat, ARISTA.lng])/1000).toFixed(1);
-          this.bindTooltip(
-            `<div style="font-size:12px;line-height:1.6">${routeLabel}${typeLabels[type]}<br><span style="color:#888">${name}</span><br><span style="color:#888">${km}km to Arista</span></div>`,
-            { permanent: false, direction: 'top', opacity: 1 }
-          ).openTooltip();
-        });
+          el2.addEventListener('mouseenter', async () => {
+            this.setIcon(makeStopIcon(type, true));
+            const km = (map.distance([stop.lat, stop.lon],[ARISTA.lat, ARISTA.lng])/1000).toFixed(1);
 
-        m.on('mouseout', function() {
-          this.setIcon(makeStopIcon(type, false));
-          if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; transportLines = transportLines.filter(l => l !== hoverRoute); }
-          this.closeTooltip();
+            // Show immediate tooltip
+            this.unbindTooltip();
+            this.bindTooltip(
+              `<div style="font-size:12px;line-height:1.7;min-width:140px">
+                <b style="font-size:13px">${typeLabels[type]}</b><br>
+                ${name}<br>
+                <span style="color:#999">${km} km to Arista</span><br>
+                <span style="color:#bbb;font-size:11px">Loading routes…</span>
+              </div>`,
+              { permanent: true, direction: 'top', opacity: 1, offset: [0, -4] }
+            ).openTooltip();
+
+            // Fetch route to Arista
+            const coords = await fetchRoute(stop.lat, stop.lon, ARISTA.lat, ARISTA.lng);
+            if (coords) {
+              if (hoverRoute) hoverRoute.remove();
+              hoverRoute = L.polyline(coords, {
+                color: routeColors[type] || '#0057B8',
+                weight: 5, opacity: 0.8,
+                dashArray: type === 'bus' ? null : '10,5'
+              }).addTo(map);
+            }
+
+            // Fetch route numbers
+            const routes = await fetchRoutesForStop(stop.id);
+            const routeStr = routes.length ? routes.join(', ') : '—';
+            this.unbindTooltip();
+            this.bindTooltip(
+              `<div style="font-size:12px;line-height:1.7;min-width:140px">
+                <b style="font-size:13px">${typeLabels[type]} ${routeStr !== '—' ? routeStr : ''}</b><br>
+                ${name}<br>
+                <span style="color:#999">${km} km to Arista</span>
+              </div>`,
+              { permanent: true, direction: 'top', opacity: 1, offset: [0, -4] }
+            ).openTooltip();
+          });
+
+          el2.addEventListener('mouseleave', () => {
+            this.setIcon(makeStopIcon(type, false));
+            this.unbindTooltip();
+            if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
+          });
         });
 
         transportLines.push(m);
