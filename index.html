@@ -30,6 +30,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .hmeta { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #999; align-items: center; flex-wrap: wrap; }
 .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .empty { padding: 20px 14px; font-size: 13px; color: #aaa; line-height: 1.6; }
+.hcard { position: relative; }
+.hcard-del { display: none; position: absolute; top: 50%; right: 10px; transform: translateY(-50%); background: #fff5f4; border: 1px solid #f5c6c2; color: #c0392b; border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; z-index: 2; }
+.hcard:hover .hcard-del { display: block; }
+.hcard-del:hover { background: #ffe0de; }
+.overlay-bar { display: flex; gap: 6px; align-items: center; padding: 7px 14px; background: #fff; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
+.overlay-bar span { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
+.ovl-btn { font-size: 12px; padding: 5px 12px; border: 1px solid #ddd; border-radius: 20px; background: #fff; color: #555; cursor: pointer; transition: all .15s; }
+.ovl-btn:hover { border-color: #999; color: #1a1a1a; }
+.ovl-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
 .thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
 .detail { display: none; position: absolute; inset: 0; background: #f5f4f0; overflow-y: auto; z-index: 10; }
 .detail.open { display: block; }
@@ -97,6 +106,12 @@ textarea:focus { outline: none; border-color: #aaa; }
   </div>
 </div>
 
+<div class="overlay-bar">
+  <span>Overlay</span>
+  <button class="ovl-btn active" id="ovl-none" onclick="setOverlay('none')">None</button>
+  <button class="ovl-btn" id="ovl-transport" onclick="setOverlay('transport')">🚌 Transport</button>
+  <button class="ovl-btn" id="ovl-area" onclick="setOverlay('area')">⬤ Floor area</button>
+</div>
 <div class="main" id="main-view">
   <div id="map"></div>
   <div class="sidebar">
@@ -292,6 +307,7 @@ function render() {
           </div>
         </div>
       </div>
+      <button class="hcard-del" onclick="event.stopPropagation();quickDelete('${h.id}')">✕ Remove</button>
     </div>`;
   }).join('');
 }
@@ -445,6 +461,103 @@ async function relocate(id) {
   await geocode(h);
   if (h.lat) { placeMarker(h); map.setView([h.lat, h.lng], 16); syncStatus('ok', 'Pin updated'); }
   else { syncStatus('err', 'Could not locate — try a more specific address'); }
+}
+
+// ---- Overlays ----
+let currentOverlay = 'none';
+let areaCircles = [];
+let transportLines = [];
+const ARISTA = { lat: 53.3762, lng: -6.2591 }; // Arista Networks, Sandyford Rd area Dublin
+
+function setOverlay(type) {
+  currentOverlay = type;
+  ['none','transport','area'].forEach(t => {
+    document.getElementById('ovl-'+t).classList.toggle('active', t === type);
+  });
+  clearOverlays();
+  if (type === 'area') drawAreaOverlay();
+  if (type === 'transport') drawTransportOverlay();
+}
+
+function clearOverlays() {
+  areaCircles.forEach(c => c.remove()); areaCircles = [];
+  transportLines.forEach(l => l.remove()); transportLines = [];
+}
+
+function drawAreaOverlay() {
+  houses.forEach(h => {
+    if (!h.lat || !h.area) return;
+    const sqm = parseFloat(h.area);
+    if (!sqm) return;
+    // radius in meters: scale so 100m² = 80m radius
+    const radius = Math.sqrt(sqm / Math.PI) * 8;
+    const c = L.circle([h.lat, h.lng], {
+      radius,
+      color: '#378ADD',
+      fillColor: '#378ADD',
+      fillOpacity: 0.15,
+      weight: 1.5,
+      opacity: 0.5
+    }).addTo(map);
+    c.bindTooltip(`${sqm} m²`, { permanent: false, direction: 'top' });
+    areaCircles.push(c);
+  });
+}
+
+async function drawTransportOverlay() {
+  // Draw straight lines from Arista to each property as commute lines
+  // Then fetch nearby bus stops from Overpass API
+  syncStatus('saving', 'Loading transport…');
+  houses.forEach(h => {
+    if (!h.lat) return;
+    // Commute line from Arista to property
+    const line = L.polyline([[ARISTA.lat, ARISTA.lng],[h.lat, h.lng]], {
+      color: '#C8823A', weight: 2, opacity: 0.5, dashArray: '6,6'
+    }).addTo(map);
+    const km = (map.distance([ARISTA.lat, ARISTA.lng],[h.lat, h.lng])/1000).toFixed(1);
+    line.bindTooltip(`${km} km from Arista`, { sticky: true });
+    transportLines.push(line);
+  });
+
+  // Mark Arista office
+  const aristaMarker = L.marker([ARISTA.lat, ARISTA.lng], {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="background:#1a1a1a;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)">🏢 Arista</div>`,
+      iconAnchor: [30, 12]
+    })
+  }).addTo(map);
+  transportLines.push(aristaMarker);
+
+  // Fetch bus stops near each property from Overpass
+  for (const h of houses) {
+    if (!h.lat) continue;
+    try {
+      const bbox = `${h.lat-0.005},${h.lng-0.008},${h.lat+0.005},${h.lng+0.008}`;
+      const query = `[out:json][timeout:10];node["highway"="bus_stop"](${bbox});out body;`;
+      const r = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST', body: 'data=' + encodeURIComponent(query)
+      });
+      const d = await r.json();
+      (d.elements || []).slice(0, 8).forEach(stop => {
+        const m = L.circleMarker([stop.lat, stop.lon], {
+          radius: 5, color: '#C8823A', fillColor: '#fff', fillOpacity: 1, weight: 2
+        }).addTo(map);
+        if (stop.tags && stop.tags.name) m.bindTooltip(stop.tags.name, { direction: 'top' });
+        transportLines.push(m);
+      });
+    } catch(e) { console.warn('Bus stop fetch failed', e); }
+  }
+  syncStatus('ok', 'Transport loaded');
+}
+
+async function quickDelete(id) {
+  if (!confirm('Remove this property?')) return;
+  houses = houses.filter(x => x.id !== id);
+  if (markers[id]) { markers[id].remove(); delete markers[id]; }
+  await dbDelete(id);
+  if (currentOverlay !== 'none') { clearOverlays(); setOverlay(currentOverlay); }
+  render();
 }
 
 function closeDetail() {
