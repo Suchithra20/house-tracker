@@ -215,37 +215,25 @@ function placeMarker(h) {
   markers[h.id] = m;
 }
 
-async function nominatim(q) {
-  // Use structured search for better accuracy
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=3&countrycodes=ie&addressdetails=1`;
-  const r = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'HouseTrackerDublin/1.0' } });
-  const d = await r.json();
-  if (!d || !d.length) return null;
-  // Prefer results that are actually in Ireland/Dublin
-  const best = d.find(x => x.display_name && x.display_name.includes('Ireland')) || d[0];
-  return { lat: parseFloat(best.lat), lng: parseFloat(best.lon), display: best.display_name };
-}
+const GOOGLE_KEY = 'AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
 
 async function geocode(h) {
   if (h.lat) return;
   const addr = (h.address || '').trim();
   const eircode = h.eircode ? h.eircode.slice(0,3) + ' ' + h.eircode.slice(3) : '';
+  const q = eircode ? `${addr} ${eircode} Ireland` : `${addr} Ireland`;
   try {
-    let result = null;
-    // Best: address + eircode
-    if (addr && eircode) result = await nominatim(`${addr} ${eircode} Ireland`);
-    // Good: address + Ireland
-    if (!result && addr) result = await nominatim(`${addr} Ireland`);
-    // Fallback: eircode routing district only
-    if (!result && eircode) result = await nominatim(`${eircode} Ireland`);
-    if (result) {
-      h.lat = result.lat; h.lng = result.lng;
-      console.log('Geocoded to:', result.display);
+    const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=ie&key=${GOOGLE_KEY}`);
+    const d = await r.json();
+    console.log('Geocode status:', d.status, d.results && d.results[0] && d.results[0].formatted_address);
+    if (d.status === 'OK' && d.results[0]) {
+      h.lat = d.results[0].geometry.location.lat;
+      h.lng = d.results[0].geometry.location.lng;
       await dbUpsert(h);
     } else {
-      console.warn('Geocoding found nothing for:', addr, eircode);
+      console.warn('Geocoding failed:', d.status, q);
     }
-  } catch(e) { console.error('Geocode failed', e); }
+  } catch(e) { console.error('Geocode error', e); }
 }
 
 function fitAll() {
