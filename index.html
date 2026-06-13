@@ -216,22 +216,35 @@ function placeMarker(h) {
 }
 
 async function nominatim(q) {
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=ie`);
+  // Use structured search for better accuracy
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=3&countrycodes=ie&addressdetails=1`;
+  const r = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'HouseTrackerDublin/1.0' } });
   const d = await r.json();
-  return d && d[0] ? { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) } : null;
+  if (!d || !d.length) return null;
+  // Prefer results that are actually in Ireland/Dublin
+  const best = d.find(x => x.display_name && x.display_name.includes('Ireland')) || d[0];
+  return { lat: parseFloat(best.lat), lng: parseFloat(best.lon), display: best.display_name };
 }
 
 async function geocode(h) {
   if (h.lat) return;
-  const addr = h.address || '';
+  const addr = (h.address || '').trim();
   const eircode = h.eircode ? h.eircode.slice(0,3) + ' ' + h.eircode.slice(3) : '';
   try {
     let result = null;
-    if (addr && eircode) result = await nominatim(`${addr}, ${eircode}, Ireland`);
-    if (!result && addr) result = await nominatim(`${addr}, Ireland`);
-    if (!result && addr) result = await nominatim(`${addr}, Dublin, Ireland`);
-    if (!result && eircode) result = await nominatim(`${eircode.slice(0,3)}, Dublin, Ireland`);
-    if (result) { h.lat = result.lat; h.lng = result.lng; await dbUpsert(h); }
+    // Best: address + eircode
+    if (addr && eircode) result = await nominatim(`${addr} ${eircode} Ireland`);
+    // Good: address + Ireland
+    if (!result && addr) result = await nominatim(`${addr} Ireland`);
+    // Fallback: eircode routing district only
+    if (!result && eircode) result = await nominatim(`${eircode} Ireland`);
+    if (result) {
+      h.lat = result.lat; h.lng = result.lng;
+      console.log('Geocoded to:', result.display);
+      await dbUpsert(h);
+    } else {
+      console.warn('Geocoding found nothing for:', addr, eircode);
+    }
   } catch(e) { console.error('Geocode failed', e); }
 }
 
@@ -338,7 +351,10 @@ function renderDetail() {
       <div class="section-label">Notes</div>
       <textarea onchange="setNotes('${h.id}',this.value)" placeholder="First impressions, things to check, pros and cons…">${h.notes||''}</textarea>
       ${h.url?`<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing site'}</a>`:''}
-      <div class="dfooter"><button class="btn danger" onclick="removeHouse('${h.id}')">Remove property</button></div>
+      <div class="dfooter">
+        <button class="btn" onclick="relocate('${h.id}')">📍 Re-locate pin</button>
+        <button class="btn danger" onclick="removeHouse('${h.id}')">Remove</button>
+      </div>
     </div>`;
   }
 }
@@ -394,6 +410,16 @@ async function deletePhoto(id, idx) {
   if (!h || !h.photos) return;
   h.photos.splice(idx, 1);
   await dbUpsert(h); renderDetail(); render();
+}
+
+async function relocate(id) {
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  h.lat = null; h.lng = null;
+  syncStatus('saving', 'Locating…');
+  await geocode(h);
+  if (h.lat) { placeMarker(h); map.setView([h.lat, h.lng], 16); syncStatus('ok', 'Pin updated'); }
+  else { syncStatus('err', 'Could not locate — try a more specific address'); }
 }
 
 function closeDetail() {
@@ -459,9 +485,8 @@ async function addHouse() {
   render();
   syncStatus('saving', 'Locating pin…');
   await geocode(h);
-  // Fallback to Dublin city centre if geocoding found nothing
-  if (!h.lat) { h.lat = 53.3498; h.lng = -6.2603; }
-  placeMarker(h);
+  if (h.lat) placeMarker(h);
+  else syncStatus('err', 'Could not locate — check address');
   fitAll();
   render();
   syncStatus('ok', 'Saved');
