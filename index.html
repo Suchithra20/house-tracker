@@ -93,6 +93,7 @@ textarea:focus { outline: none; border-color: #aaa; }
     <div class="sync-dot" id="sync-dot" title="Sync status"></div>
     <span id="sync-label" style="font-size:11px;color:#aaa">Connecting…</span>
     <button class="add-btn" onclick="openModal()">+ Add property</button>
+    <button class="add-btn" style="background:#555;margin-left:4px" onclick="regeocodeAll()" title="Fix all pin locations using Google">📍 Fix all pins</button>
   </div>
 </div>
 
@@ -400,6 +401,18 @@ async function deletePhoto(id, idx) {
   await dbUpsert(h); renderDetail(); render();
 }
 
+async function regeocodeAll() {
+  if (!confirm('Re-locate all pins using Google? This will fix any incorrect locations.')) return;
+  syncStatus('saving', 'Relocating all pins…');
+  for (const h of houses) {
+    h.lat = null; h.lng = null;
+    await geocode(h);
+    if (h.lat) placeMarker(h);
+  }
+  fitAll(); render();
+  syncStatus('ok', 'All pins updated');
+}
+
 async function relocate(id) {
   const h = houses.find(x => x.id === id);
   if (!h) return;
@@ -481,10 +494,20 @@ async function addHouse() {
 }
 
 // ---- Boot ----
+const BAD_LAT = 53.3498, BAD_LNG = -6.2603;
+function isBadCoord(h) {
+  if (!h.lat) return false;
+  return (Math.abs(h.lat - BAD_LAT) < 0.001 && Math.abs(h.lng - BAD_LNG) < 0.001);
+}
+
 (async () => {
   await dbLoad();
-  for (const h of houses) { await geocode(h); placeMarker(h); }
-  setTimeout(fitAll, 800);
+  for (const h of houses) {
+    if (isBadCoord(h)) { h.lat = null; h.lng = null; }
+    await geocode(h);
+    if (h.lat) placeMarker(h);
+  }
+  fitAll();
   render();
 })();
 </script>
