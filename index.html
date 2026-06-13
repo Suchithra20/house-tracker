@@ -444,6 +444,55 @@ async function deletePhoto(id, idx) {
   await dbUpsert(h); renderDetail(); render();
 }
 
+// ---- Overlays ----
+let currentOverlay = 'none';
+let areaCircles = [];
+let transportLines = [];
+let greenLayer = null;
+let hoverRouteLayer = null;
+const ARISTA = { lat: 53.3493, lng: -6.2435 }; // 2 George's Dock, IFSC, Dublin 1
+
+function setOverlay(type) {
+  currentOverlay = type;
+  ['none','transport','area','green'].forEach(t => {
+    const el = document.getElementById('ovl-'+t);
+    if (el) el.classList.toggle('active', t === type);
+  });
+  clearOverlays();
+  if (type === 'area') drawAreaOverlay();
+  if (type === 'transport') drawTransportOverlay();
+  if (type === 'green') drawGreenOverlay();
+}
+
+function clearOverlays() {
+  areaCircles.forEach(c => { try { c.remove(); } catch(e){} });
+  areaCircles = [];
+  transportLines.forEach(l => { try { l.remove(); } catch(e){} });
+  transportLines = [];
+  if (hoverRouteLayer) { try { hoverRouteLayer.remove(); } catch(e){} hoverRouteLayer = null; }
+  if (greenLayer) { try { map.removeLayer(greenLayer); } catch(e){} greenLayer = null; }
+}
+
+function drawAreaOverlay() {
+  const located = houses.filter(h => h.lat);
+  if (!located.length) return;
+  const areas = located.map(h => parseFloat(h.area) || 80);
+  const maxArea = Math.max(...areas);
+  const minArea = Math.min(...areas);
+  located.forEach(h => {
+    const sqm = parseFloat(h.area) || 80;
+    const radius = 150 + ((sqm - minArea) / (Math.max(maxArea - minArea, 1))) * 250;
+    const c = L.circle([h.lat, h.lng], {
+      radius, color: '#378ADD', fillColor: '#378ADD', fillOpacity: 0.18, weight: 2, opacity: 0.8
+    }).addTo(map);
+    c.bindTooltip(h.area ? `${sqm} m²` : 'Area unknown', {
+      permanent: true, direction: 'top', offset: [0, -8]
+    });
+    c.openTooltip();
+    areaCircles.push(c);
+  });
+}
+
 async function drawGreenOverlay() {
   syncStatus('saving', 'Loading green spaces…');
   const lats = houses.filter(h=>h.lat).map(h=>h.lat);
@@ -520,7 +569,6 @@ async function fetchRoutesForStop(stopId) {
   } catch(e) { return []; }
 }
 
-let hoverRoute = null;
 
 function attachStopHover(marker, stop, type, name) {
   // Use requestAnimationFrame to guarantee element is in DOM
@@ -544,8 +592,8 @@ function attachStopHover(marker, stop, type, name) {
         // Route line
         const coords = await fetchRoute(stop.lat, stop.lon, ARISTA.lat, ARISTA.lng);
         if (coords) {
-          if (hoverRoute) hoverRoute.remove();
-          hoverRoute = L.polyline(coords, { color:STOP_COLORS[type]||'#0057B8', weight:5, opacity:0.8, dashArray:type==='bus'?null:'10,5' }).addTo(map);
+          if (hoverRouteLayer) hoverRouteLayer.remove();
+          hoverRouteLayer = L.polyline(coords, { color:STOP_COLORS[type]||'#0057B8', weight:5, opacity:0.8, dashArray:type==='bus'?null:'10,5' }).addTo(map);
         }
 
         // Route numbers
@@ -561,7 +609,7 @@ function attachStopHover(marker, stop, type, name) {
       el.addEventListener('mouseleave', () => {
         marker.setIcon(makeStopIcon(type, false));
         marker.unbindTooltip();
-        if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
+        if (hoverRouteLayer) { hoverRouteLayer.remove(); hoverRouteLayer = null; }
       });
     });
   });
