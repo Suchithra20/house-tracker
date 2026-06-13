@@ -487,35 +487,33 @@ function clearOverlays() {
 }
 
 function drawAreaOverlay() {
-  const withArea = houses.filter(h => h.lat && h.area && parseFloat(h.area) > 0);
-  const noArea = houses.filter(h => h.lat && (!h.area || parseFloat(h.area) <= 0));
+  const located = houses.filter(h => h.lat);
+  if (!located.length) return;
 
-  if (withArea.length === 0 && noArea.length === 0) return;
+  const areas = located.map(h => parseFloat(h.area) || 80);
+  const maxArea = Math.max(...areas);
+  const minArea = Math.min(...areas);
 
-  // Find min/max for relative scaling
-  const areas = withArea.map(h => parseFloat(h.area));
-  const maxArea = areas.length ? Math.max(...areas) : 100;
-  const minArea = areas.length ? Math.min(...areas) : 50;
-
-  houses.forEach(h => {
-    if (!h.lat) return;
-    const sqm = parseFloat(h.area) || null;
-    // Scale radius: min 60m, max 200m, relative to collection
-    let radius;
-    if (sqm) {
-      radius = 60 + ((sqm - minArea) / (Math.max(maxArea - minArea, 1))) * 140;
-    } else {
-      radius = 60; // default if no area set
-    }
+  located.forEach((h, i) => {
+    const sqm = parseFloat(h.area) || 80;
+    // Scale: 50m² = 150m radius, 200m² = 400m radius — clearly visible on map
+    const radius = 150 + ((sqm - minArea) / (Math.max(maxArea - minArea, 1))) * 250;
     const c = L.circle([h.lat, h.lng], {
       radius,
       color: '#378ADD',
       fillColor: '#378ADD',
       fillOpacity: 0.18,
       weight: 2,
-      opacity: 0.7
+      opacity: 0.8
     }).addTo(map);
-    c.bindTooltip(sqm ? `${sqm} m²` : 'No floor area set', { permanent: true, direction: 'top', className: 'area-tip' });
+    // Always show label, not just on hover
+    c.bindTooltip(h.area ? `${sqm} m²` : 'Area unknown', {
+      permanent: true,
+      direction: 'top',
+      className: 'area-tip',
+      offset: [0, -8]
+    });
+    c.openTooltip();
     areaCircles.push(c);
   });
 }
@@ -555,11 +553,12 @@ async function drawTransportOverlay() {
         method: 'POST', body: 'data=' + encodeURIComponent(query)
       });
       const d = await r.json();
-      (d.elements || []).slice(0, 8).forEach(stop => {
+      (d.elements || []).slice(0, 6).forEach(stop => {
         const m = L.circleMarker([stop.lat, stop.lon], {
-          radius: 5, color: '#C8823A', fillColor: '#fff', fillOpacity: 1, weight: 2
+          radius: 4, color: '#C8823A', fillColor: '#fff8f0', fillOpacity: 1, weight: 1.5
         }).addTo(map);
-        if (stop.tags && stop.tags.name) m.bindTooltip(stop.tags.name, { direction: 'top' });
+        const name = (stop.tags && stop.tags.name) ? stop.tags.name : 'Bus stop';
+        m.bindTooltip(`🚌 ${name}`, { direction: 'top', opacity: 0.9 });
         transportLines.push(m);
       });
     } catch(e) { console.warn('Bus stop fetch failed', e); }
