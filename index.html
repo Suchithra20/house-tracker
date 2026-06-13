@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>House Tracker — Dublin</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; height: 100vh; display: flex; flex-direction: column; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: #fff; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
+  .header h1 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .header h1 span { color: #888; font-weight: 400; margin-left: 6px; font-size: 13px; }
+  .add-btn { font-size: 13px; padding: 7px 14px; border: 1px solid #ccc; border-radius: 8px; background: #1a1a1a; color: #fff; cursor: pointer; font-weight: 500; }
+  .add-btn:hover { background: #333; }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+  #map { flex: 1; z-index: 1; }
+
+  .sidebar { width: 280px; background: #fff; border-left: 1px solid #e5e3dc; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+  .sidebar-hdr { padding: 10px 14px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
+  .hlist { overflow-y: auto; flex: 1; }
+  .hcard { padding: 11px 14px; border-bottom: 1px solid #f0ede6; cursor: pointer; transition: background .1s; }
+  .hcard:hover { background: #faf9f6; }
+  .hcard.active { background: #eef4ff; border-left: 3px solid #378ADD; padding-left: 11px; }
+  .hprice { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+  .haddr { font-size: 11px; color: #888; margin-top: 2px; line-height: 1.4; }
+  .hmeta { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #999; align-items: center; flex-wrap: wrap; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .stag { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+  .empty { padding: 20px 14px; font-size: 13px; color: #aaa; line-height: 1.6; }
+
+  /* Detail panel */
+  .detail { display: none; position: absolute; inset: 0; background: #f5f4f0; overflow-y: auto; z-index: 10; }
+  .detail.open { display: block; }
+  .detail-inner { max-width: 640px; margin: 0 auto; padding: 20px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #666; cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; }
+  .back:hover { color: #1a1a1a; }
+  .dcard { background: #fff; border-radius: 12px; border: 1px solid #e5e3dc; padding: 20px; }
+  .dcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .dprice { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+  .daddr { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .dgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .dstat { background: #f5f4f0; border-radius: 8px; padding: 10px 12px; }
+  .dstat label { font-size: 10px; color: #999; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .04em; }
+  .dstat span { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+  .section-label { font-size: 11px; color: #999; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .stars { display: flex; gap: 4px; margin-bottom: 16px; }
+  .star { font-size: 22px; cursor: pointer; color: #ddd; line-height: 1; transition: color .1s; }
+  .star.on { color: #C8823A; }
+  .star:hover { color: #C8823A; }
+  textarea { width: 100%; border: 1px solid #e0ddd6; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; background: #fff; color: #1a1a1a; resize: vertical; min-height: 80px; line-height: 1.5; }
+  textarea:focus { outline: none; border-color: #aaa; }
+  .dlink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #378ADD; margin-top: 12px; cursor: pointer; border: none; background: none; padding: 0; text-decoration: none; }
+  .dlink:hover { text-decoration: underline; }
+  .dfooter { margin-top: 16px; padding-top: 14px; border-top: 1px solid #f0ede6; display: flex; gap: 10px; align-items: center; }
+  .ss { font-size: 13px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
+  .btn { padding: 7px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; background: #fff; color: #555; font-family: inherit; }
+  .btn:hover { background: #f5f4f0; }
+  .btn.danger { color: #c0392b; border-color: #f5c6c2; }
+  .btn.danger:hover { background: #fff5f4; }
+
+  /* Modal */
+  .modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); align-items: center; justify-content: center; z-index: 100; }
+  .modal-wrap.open { display: flex; }
+  .modal { background: #fff; border-radius: 14px; padding: 22px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.15); }
+  .modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .field input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a1a; }
+  .field input:focus { outline: none; border-color: #999; }
+  .tc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mactions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .geocode-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏠 House Tracker <span id="cnt"></span></h1>
+  <button class="add-btn" onclick="openModal()">+ Add property</button>
+</div>
+
+<div class="main" id="main-view">
+  <div id="map"></div>
+  <div class="sidebar">
+    <div class="sidebar-hdr">Properties</div>
+    <div class="hlist" id="hlist"></div>
+    <div class="empty" id="hempty">No properties yet.<br>Add a daft.ie or myhome.ie listing to get started.</div>
+  </div>
+</div>
+
+<div class="detail" id="detail-view">
+  <div class="detail-inner">
+    <button class="back" onclick="closeDetail()">← All properties</button>
+    <div class="dcard" id="dcontent"></div>
+  </div>
+</div>
+
+<div class="modal-wrap" id="modal">
+  <div class="modal">
+    <h2>Add property</h2>
+    <div class="field"><label>Listing URL (Daft or MyHome)</label><input type="url" id="f-url" placeholder="https://www.daft.ie/..."></div>
+    <div class="field"><label>Full address</label><input type="text" id="f-addr" placeholder="14 Maple Road, Drumcondra, Dublin 9"><div class="geocode-hint">Used to place the pin on the map automatically</div></div>
+    <div class="field"><label>Asking price</label><input type="text" id="f-price" placeholder="€395,000"></div>
+    <div class="tc">
+      <div class="field"><label>Beds</label><input type="number" id="f-beds" min="1" max="10" placeholder="3"></div>
+      <div class="field"><label>Baths</label><input type="number" id="f-baths" min="1" max="10" placeholder="2"></div>
+    </div>
+    <div class="field"><label>Eircode</label><input type="text" id="f-eircode" placeholder="D09 X2K3" style="text-transform:uppercase"><div class="geocode-hint">Used to pin the property precisely on the map</div></div>
+    <div class="field"><label>BER</label><input type="text" id="f-ber" placeholder="B2"></div>
+    <div class="mactions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500" onclick="addHouse()">Add property</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SC = { interested:'#1D9E75', viewing:'#C8823A', offered:'#378ADD', passed:'#9b9b9b' };
+const SL = { interested:'Interested', viewing:'Viewing', offered:'Offered', passed:'Passed' };
+
+let houses = [];
+try { houses = JSON.parse(localStorage.getItem('ht_standalone') || '[]'); } catch(e){}
+let map, markers = {}, activeId = null;
+
+function save() { localStorage.setItem('ht_standalone', JSON.stringify(houses)); }
+
+// Init map centred on Dublin
+map = L.map('map').setView([53.3498, -6.2603], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+function makeIcon(color) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:14px;line-height:1">🏠</span></div>`,
+    iconSize: [32,32], iconAnchor:[16,32], popupAnchor:[0,-36]
+  });
+}
+
+function placeMarker(h) {
+  if (!h.lat) return;
+  if (markers[h.id]) markers[h.id].remove();
+  const m = L.marker([h.lat, h.lng], { icon: makeIcon(SC[h.status||'interested']) })
+    .addTo(map)
+    .bindPopup(`<b style="font-size:13px">${h.address||'Property'}</b><br><span style="color:#666;font-size:12px">${h.price?'€'+h.price:''}</span>`);
+  m.on('click', () => openDetail(h.id));
+  markers[h.id] = m;
+}
+
+function geocode(h, cb) {
+  if (h.lat) { cb(); return; }
+  // Prefer eircode — format as "D09 X2K3" for Nominatim
+  const eircode = h.eircode ? h.eircode.slice(0,3) + ' ' + h.eircode.slice(3) : '';
+  const q = encodeURIComponent(eircode ? eircode + ', Ireland' : (h.address||'') + ', Dublin, Ireland');
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1&countrycodes=ie`)
+    .then(r => r.json())
+    .then(data => {
+      if (data && data[0]) { h.lat = parseFloat(data[0].lat); h.lng = parseFloat(data[0].lon); save(); }
+      else if (eircode && h.address) {
+        // fallback to address if eircode lookup failed
+        const q2 = encodeURIComponent(h.address + ', Ireland');
+        return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q2}&limit=1&countrycodes=ie`)
+          .then(r => r.json()).then(d => { if(d&&d[0]){h.lat=parseFloat(d[0].lat);h.lng=parseFloat(d[0].lon);save();} });
+      }
+    })
+    .then(() => cb())
+    .catch(() => cb());
+}
+
+function fitAll() {
+  const pts = houses.filter(h => h.lat).map(h => [h.lat, h.lng]);
+  if (pts.length > 1) map.fitBounds(pts, { padding: [40,40] });
+  else if (pts.length === 1) map.setView(pts[0], 15);
+}
+
+function render() {
+  const list = document.getElementById('hlist');
+  const empty = document.getElementById('hempty');
+  document.getElementById('cnt').textContent = houses.length ? `(${houses.length})` : '';
+  if (!houses.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = houses.map(h => {
+    const s = h.status || 'interested';
+    return `<div class="hcard${activeId===h.id?' active':''}" onclick="openDetail('${h.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="hprice">${h.price ? '€'+h.price : 'Price TBC'}</div>
+          <div class="haddr">${h.address||'No address'}</div>
+        </div>
+        <div class="sdot" style="background:${SC[s]};margin-top:4px;flex-shrink:0"></div>
+      </div>
+      <div class="hmeta">
+        ${h.beds?'<span>'+h.beds+' bed</span>':''}
+        ${h.baths?'<span>'+h.baths+' bath</span>':''}
+        ${h.ber?'<span>BER '+h.ber+'</span>':''}
+        ${h.gut?'<span style="color:#C8823A">'+'★'.repeat(h.gut)+'</span>':''}
+        <span class="stag" style="background:${SC[s]}22;color:${SC[s]}">${SL[s]}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openDetail(id) {
+  activeId = id;
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  document.getElementById('main-view').style.display = 'none';
+  document.getElementById('detail-view').classList.add('open');
+  const s = h.status || 'interested';
+  document.getElementById('dcontent').innerHTML = `
+    <div class="dcard-top">
+      <div>
+        <div class="dprice">${h.price ? '€'+h.price : 'Price TBC'}</div>
+        <div class="daddr">${h.address||'—'}</div>
+      </div>
+      <select class="ss" onchange="setStatus('${h.id}',this.value)">
+        ${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}
+      </select>
+    </div>
+    <div class="dgrid">
+      <div class="dstat"><label>Beds</label><span>${h.beds||'—'}</span></div>
+      <div class="dstat"><label>Baths</label><span>${h.baths||'—'}</span></div>
+      <div class="dstat"><label>BER</label><span>${h.ber||'—'}</span></div>
+      <div class="dstat"><label>Eircode</label><span>${h.eircode ? h.eircode.slice(0,3)+' '+h.eircode.slice(3) : '—'}</span></div>
+      <div class="dstat"><label>Source</label><span>${h.source||'—'}</span></div>
+    </div>
+    <div class="section-label">Gut feeling</div>
+    <div class="stars" id="st-${h.id}">
+      ${[1,2,3,4,5].map(n=>`<span class="star${(h.gut||0)>=n?' on':''}" onclick="setGut('${h.id}',${n})">★</span>`).join('')}
+    </div>
+    <div class="section-label">Notes</div>
+    <textarea onchange="setNotes('${h.id}',this.value)" placeholder="First impressions, things to check, pros and cons…">${h.notes||''}</textarea>
+    ${h.url ? `<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing site'}</a>` : ''}
+    <div class="dfooter">
+      <button class="btn danger" onclick="removeHouse('${h.id}')">Remove property</button>
+    </div>`;
+  render();
+}
+
+function closeDetail() {
+  activeId = null;
+  document.getElementById('main-view').style.display = 'flex';
+  document.getElementById('detail-view').classList.remove('open');
+  setTimeout(() => map.invalidateSize(), 50);
+  render();
+}
+
+function setStatus(id, val) {
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  h.status = val; save(); render();
+  if (markers[id]) markers[id].setIcon(makeIcon(SC[val]));
+}
+function setGut(id, val) {
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  h.gut = val; save();
+  document.querySelectorAll('#st-'+id+' .star').forEach((s,i) => s.classList.toggle('on', i < val));
+}
+function setNotes(id, val) { const h = houses.find(x => x.id === id); if (h) { h.notes = val; save(); } }
+function removeHouse(id) {
+  houses = houses.filter(x => x.id !== id);
+  if (markers[id]) { markers[id].remove(); delete markers[id]; }
+  save(); closeDetail();
+}
+
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-ber'].forEach(id => document.getElementById(id).value = '');
+}
+
+function addHouse() {
+  const url = document.getElementById('f-url').value.trim();
+  const addr = document.getElementById('f-addr').value.trim();
+  const eircode = document.getElementById('f-eircode').value.trim().toUpperCase().replace(/\s/g,'');
+  if (!addr && !url && !eircode) { alert('Please enter at least an address or eircode'); return; }
+  const price = document.getElementById('f-price').value.replace(/[€,\s]/g,'');
+  const source = url.includes('daft.ie') ? 'Daft.ie' : url.includes('myhome.ie') ? 'MyHome.ie' : '';
+  const h = {
+    id: Date.now().toString(), url, address: addr, eircode, price,
+    beds: document.getElementById('f-beds').value,
+    baths: document.getElementById('f-baths').value,
+    ber: document.getElementById('f-ber').value.trim().toUpperCase(),
+    source, status: 'interested', gut: 0, notes: ''
+  };
+  houses.push(h);
+  save(); closeModal(); render();
+  geocode(h, () => { placeMarker(h); fitAll(); render(); });
+}
+
+// Load existing
+houses.forEach(h => geocode(h, () => { placeMarker(h); }));
+setTimeout(fitAll, 800);
+render();
+</script>
+</body>
+</html>
