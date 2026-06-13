@@ -215,21 +215,23 @@ function placeMarker(h) {
   markers[h.id] = m;
 }
 
+async function nominatim(q) {
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=ie`);
+  const d = await r.json();
+  return d && d[0] ? { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) } : null;
+}
+
 async function geocode(h) {
   if (h.lat) return;
+  const addr = h.address || '';
   const eircode = h.eircode ? h.eircode.slice(0,3) + ' ' + h.eircode.slice(3) : '';
-  const q = eircode ? eircode + ', Ireland' : (h.address||'') + ', Dublin, Ireland';
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=ie`);
-    const data = await r.json();
-    if (data && data[0]) {
-      h.lat = parseFloat(data[0].lat); h.lng = parseFloat(data[0].lon);
-    } else if (eircode && h.address) {
-      const r2 = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(h.address+', Ireland')}&limit=1&countrycodes=ie`);
-      const d2 = await r2.json();
-      if (d2 && d2[0]) { h.lat = parseFloat(d2[0].lat); h.lng = parseFloat(d2[0].lon); }
-    }
-    if (h.lat) await dbUpsert(h);
+    let result = null;
+    if (addr && eircode) result = await nominatim(`${addr}, ${eircode}, Ireland`);
+    if (!result && addr) result = await nominatim(`${addr}, Ireland`);
+    if (!result && addr) result = await nominatim(`${addr}, Dublin, Ireland`);
+    if (!result && eircode) result = await nominatim(`${eircode.slice(0,3)}, Dublin, Ireland`);
+    if (result) { h.lat = result.lat; h.lng = result.lng; await dbUpsert(h); }
   } catch(e) { console.error('Geocode failed', e); }
 }
 
