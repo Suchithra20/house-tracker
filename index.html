@@ -113,6 +113,7 @@ textarea:focus { outline: none; border-color: #aaa; }
   <button class="ovl-btn active" id="ovl-none" onclick="setOverlay('none')">None</button>
   <button class="ovl-btn" id="ovl-transport" onclick="setOverlay('transport')">🚌 Transport</button>
   <button class="ovl-btn" id="ovl-area" onclick="setOverlay('area')">⬤ Floor area</button>
+  <button class="ovl-btn" id="ovl-green" onclick="setOverlay('green')">🌿 Green spaces</button>
 </div>
 <div class="main" id="main-view">
   <div id="map"></div>
@@ -443,6 +444,54 @@ async function deletePhoto(id, idx) {
   await dbUpsert(h); renderDetail(); render();
 }
 
+async function drawGreenOverlay() {
+  syncStatus('saving', 'Loading green spaces…');
+  // Get bounding box covering all properties
+  const lats = houses.filter(h=>h.lat).map(h=>h.lat);
+  const lngs = houses.filter(h=>h.lat).map(h=>h.lng);
+  if (!lats.length) { syncStatus('ok',''); return; }
+  const minLat = Math.min(...lats)-0.03, maxLat = Math.max(...lats)+0.03;
+  const minLng = Math.min(...lngs)-0.04, maxLng = Math.max(...lngs)+0.04;
+  const bbox = `${minLat},${minLng},${maxLat},${maxLng}`;
+
+  const query = `[out:json][timeout:20];
+(
+  way["leisure"="park"](${bbox});
+  way["leisure"="nature_reserve"](${bbox});
+  way["landuse"="grass"](${bbox});
+  way["landuse"="recreation_ground"](${bbox});
+  way["leisure"="garden"](${bbox});
+  way["leisure"="pitch"](${bbox});
+);
+out geom;`;
+
+  try {
+    const r = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST', body: 'data=' + encodeURIComponent(query)
+    });
+    const d = await r.json();
+    const features = (d.elements || []).map(el => ({
+      type: 'Feature',
+      properties: { name: el.tags && el.tags.name || '' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [el.geometry ? el.geometry.map(p => [p.lon, p.lat]) : []]
+      }
+    }));
+
+    greenLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+      style: { color: '#2d8a4e', fillColor: '#4caf7d', fillOpacity: 0.3, weight: 1, opacity: 0.6 },
+      onEachFeature: (f, layer) => {
+        if (f.properties.name) layer.bindTooltip(`🌿 ${f.properties.name}`, { sticky: true });
+      }
+    }).addTo(map);
+    syncStatus('ok', 'Green spaces loaded');
+  } catch(e) {
+    console.error('Green overlay failed', e);
+    syncStatus('err', 'Could not load green spaces');
+  }
+}
+
 async function regeocodeAll() {
   if (!confirm('Re-locate all pins using Google? This will fix any incorrect locations.')) return;
   syncStatus('saving', 'Relocating all pins…');
@@ -473,17 +522,21 @@ const ARISTA = { lat: 53.3493, lng: -6.2435 }; // Arista Networks, 2 George's Do
 
 function setOverlay(type) {
   currentOverlay = type;
-  ['none','transport','area'].forEach(t => {
+  ['none','transport','area','green'].forEach(t => {
     document.getElementById('ovl-'+t).classList.toggle('active', t === type);
   });
   clearOverlays();
   if (type === 'area') drawAreaOverlay();
   if (type === 'transport') drawTransportOverlay();
+  if (type === 'green') drawGreenOverlay();
 }
 
+let greenLayer = null;
 function clearOverlays() {
   areaCircles.forEach(c => c.remove()); areaCircles = [];
-  transportLines.forEach(l => l.remove()); transportLines = [];
+  transportLines.forEach(l => { try { l.remove(); } catch(e){} }); transportLines = [];
+  if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
+  if (greenLayer) { map.removeLayer(greenLayer); greenLayer = null; }
 }
 
 function drawAreaOverlay() {
@@ -620,17 +673,20 @@ async function drawTransportOverlay() {
         const routeColors = { bus: '#0057B8', train: '#E8A000', luas: '#C8102E', ferry: '#0099CC' };
 
         m.on('add', function() {
-          const el2 = this.getElement();
-          if (!el2) return;
-          el2.style.cursor = 'pointer';
+          // Use setTimeout to ensure element is in DOM
+          const self = this;
+          setTimeout(() => {
+            const el2 = self.getElement();
+            if (!el2) return;
+            el2.style.cursor = 'pointer';
 
-          el2.addEventListener('mouseenter', async () => {
-            this.setIcon(makeStopIcon(type, true));
+            el2.addEventListener('mouseenter', async () => {
+            self.setIcon(makeStopIcon(type, true));
             const km = (map.distance([stop.lat, stop.lon],[ARISTA.lat, ARISTA.lng])/1000).toFixed(1);
 
             // Show immediate tooltip
-            this.unbindTooltip();
-            this.bindTooltip(
+            self.unbindTooltip();
+            self.bindTooltip(
               `<div style="font-size:12px;line-height:1.7;min-width:140px">
                 <b style="font-size:13px">${typeLabels[type]}</b><br>
                 ${name}<br>
@@ -654,8 +710,8 @@ async function drawTransportOverlay() {
             // Fetch route numbers
             const routes = await fetchRoutesForStop(stop.id);
             const routeStr = routes.length ? routes.join(', ') : '—';
-            this.unbindTooltip();
-            this.bindTooltip(
+            self.unbindTooltip();
+            self.bindTooltip(
               `<div style="font-size:12px;line-height:1.7;min-width:140px">
                 <b style="font-size:13px">${typeLabels[type]} ${routeStr !== '—' ? routeStr : ''}</b><br>
                 ${name}<br>
@@ -665,11 +721,12 @@ async function drawTransportOverlay() {
             ).openTooltip();
           });
 
-          el2.addEventListener('mouseleave', () => {
-            this.setIcon(makeStopIcon(type, false));
-            this.unbindTooltip();
-            if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
-          });
+            el2.addEventListener('mouseleave', () => {
+              self.setIcon(makeStopIcon(type, false));
+              self.unbindTooltip();
+              if (hoverRoute) { hoverRoute.remove(); hoverRoute = null; }
+            });
+          }, 100); // end setTimeout
         });
 
         transportLines.push(m);
