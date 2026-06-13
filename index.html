@@ -469,7 +469,7 @@ async function relocate(id) {
 let currentOverlay = 'none';
 let areaCircles = [];
 let transportLines = [];
-const ARISTA = { lat: 53.3488, lng: -6.2428 }; // Arista Networks, 2 George's Dock, IFSC, Dublin 1
+const ARISTA = { lat: 53.3493, lng: -6.2435 }; // Arista Networks, 2 George's Dock, IFSC, Dublin 1
 
 function setOverlay(type) {
   currentOverlay = type;
@@ -518,51 +518,83 @@ function drawAreaOverlay() {
   });
 }
 
-async function drawTransportOverlay() {
-  // Draw straight lines from Arista to each property as commute lines
-  // Then fetch nearby bus stops from Overpass API
-  syncStatus('saving', 'Loading transport…');
-  houses.forEach(h => {
-    if (!h.lat) return;
-    // Commute line from Arista to property
-    const line = L.polyline([[ARISTA.lat, ARISTA.lng],[h.lat, h.lng]], {
-      color: '#C8823A', weight: 2, opacity: 0.5, dashArray: '6,6'
-    }).addTo(map);
-    const km = (map.distance([ARISTA.lat, ARISTA.lng],[h.lat, h.lng])/1000).toFixed(1);
-    line.bindTooltip(`${km} km from Arista`, { sticky: true });
-    transportLines.push(line);
+function makeStopIcon(type) {
+  const icons = { bus: '🚌', train: '🚆', luas: '🚊', ferry: '⛴' };
+  const colors = { bus: '#0057B8', train: '#f90', luas: '#c00', ferry: '#09c' };
+  const label = icons[type] || '🚌';
+  const bg = colors[type] || '#0057B8';
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:24px;height:24px;border-radius:50%;background:${bg};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.3)">${label}</div>`,
+    iconSize: [24,24], iconAnchor: [12,12]
   });
+}
+
+async function fetchStopsNear(lat, lng) {
+  const d = 0.012; // ~1.2km bounding box
+  const bbox = `${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
+  const query = `[out:json][timeout:15];
+(
+  node["highway"="bus_stop"](${bbox});
+  node["railway"="station"](${bbox});
+  node["railway"="tram_stop"](${bbox});
+  node["amenity"="ferry_terminal"](${bbox});
+);
+out body;`;
+  const r = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST', body: 'data=' + encodeURIComponent(query)
+  });
+  return (await r.json()).elements || [];
+}
+
+async function drawTransportOverlay() {
+  syncStatus('saving', 'Loading transport…');
 
   // Mark Arista office
   const aristaMarker = L.marker([ARISTA.lat, ARISTA.lng], {
     icon: L.divIcon({
       className: '',
-      html: `<div style="background:#1a1a1a;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3)">🏢 Arista</div>`,
-      iconAnchor: [30, 12]
+      html: `<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`,
+      iconAnchor: [36, 14]
     })
   }).addTo(map);
   transportLines.push(aristaMarker);
 
-  // Fetch bus stops near each property from Overpass
+  // For each property fetch nearby stops
   for (const h of houses) {
     if (!h.lat) continue;
     try {
-      const bbox = `${h.lat-0.005},${h.lng-0.008},${h.lat+0.005},${h.lng+0.008}`;
-      const query = `[out:json][timeout:10];node["highway"="bus_stop"](${bbox});out body;`;
-      const r = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST', body: 'data=' + encodeURIComponent(query)
-      });
-      const d = await r.json();
-      (d.elements || []).slice(0, 6).forEach(stop => {
-        const m = L.circleMarker([stop.lat, stop.lon], {
-          radius: 4, color: '#C8823A', fillColor: '#fff8f0', fillOpacity: 1, weight: 1.5
-        }).addTo(map);
-        const name = (stop.tags && stop.tags.name) ? stop.tags.name : 'Bus stop';
-        m.bindTooltip(`🚌 ${name}`, { direction: 'top', opacity: 0.9 });
+      const stops = await fetchStopsNear(h.lat, h.lng);
+      stops.slice(0, 12).forEach(stop => {
+        const tags = stop.tags || {};
+        let type = 'bus';
+        if (tags.railway === 'station') type = 'train';
+        else if (tags.railway === 'tram_stop') type = 'luas';
+        else if (tags.amenity === 'ferry_terminal') type = 'ferry';
+
+        const name = tags.name || tags['name:en'] || type;
+        const m = L.marker([stop.lat, stop.lon], { icon: makeStopIcon(type) }).addTo(map);
+        m.bindTooltip(name, { direction: 'top', opacity: 0.95 });
         transportLines.push(m);
       });
-    } catch(e) { console.warn('Bus stop fetch failed', e); }
+    } catch(e) { console.warn('Stop fetch failed for', h.address, e); }
   }
+
+  // Also fetch stops near Arista
+  try {
+    const aristaStops = await fetchStopsNear(ARISTA.lat, ARISTA.lng);
+    aristaStops.slice(0, 8).forEach(stop => {
+      const tags = stop.tags || {};
+      let type = 'bus';
+      if (tags.railway === 'station') type = 'train';
+      else if (tags.railway === 'tram_stop') type = 'luas';
+      const name = tags.name || type;
+      const m = L.marker([stop.lat, stop.lon], { icon: makeStopIcon(type) }).addTo(map);
+      m.bindTooltip(`Near Arista: ${name}`, { direction: 'top' });
+      transportLines.push(m);
+    });
+  } catch(e) {}
+
   syncStatus('ok', 'Transport loaded');
 }
 
