@@ -435,6 +435,7 @@ function openModal() { document.getElementById('modal').classList.add('open'); }
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
   ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-ber'].forEach(id => document.getElementById(id).value = '');
+  setTimeout(() => map.invalidateSize(), 200);
 }
 
 async function addHouse() {
@@ -452,8 +453,18 @@ async function addHouse() {
     source, status: 'interested', gut: 0, notes: '', photos: []
   };
   houses.push(h);
-  await dbUpsert(h); closeModal(); render();
-  syncStatus("saving","Locating pin…"); await geocode(h); placeMarker(h); fitAll(); render(); syncStatus("ok","Saved");
+  await dbUpsert(h); closeModal();
+  // Make sure map is visible and sized correctly before placing pin
+  setTimeout(() => map.invalidateSize(), 100);
+  render();
+  syncStatus('saving', 'Locating pin…');
+  await geocode(h);
+  // Fallback to Dublin city centre if geocoding found nothing
+  if (!h.lat) { h.lat = 53.3498; h.lng = -6.2603; }
+  placeMarker(h);
+  fitAll();
+  render();
+  syncStatus('ok', 'Saved');
 }
 
 // ---- Boot ----
