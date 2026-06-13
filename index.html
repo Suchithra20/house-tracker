@@ -7,73 +7,96 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; height: 100vh; display: flex; flex-direction: column; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; height: 100vh; display: flex; flex-direction: column; }
 
-  .header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: #fff; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
-  .header h1 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
-  .header h1 span { color: #888; font-weight: 400; margin-left: 6px; font-size: 13px; }
-  .add-btn { font-size: 13px; padding: 7px 14px; border: 1px solid #ccc; border-radius: 8px; background: #1a1a1a; color: #fff; cursor: pointer; font-weight: 500; }
-  .add-btn:hover { background: #333; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: #fff; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
+.header h1 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+.header h1 span { color: #888; font-weight: 400; margin-left: 6px; font-size: 13px; }
+.add-btn { font-size: 13px; padding: 7px 14px; border: 1px solid #ccc; border-radius: 8px; background: #1a1a1a; color: #fff; cursor: pointer; font-weight: 500; }
+.add-btn:hover { background: #333; }
 
-  .main { display: flex; flex: 1; overflow: hidden; }
-  #map { flex: 1; z-index: 1; }
+.main { display: flex; flex: 1; overflow: hidden; }
+#map { flex: 1; z-index: 1; }
 
-  .sidebar { width: 280px; background: #fff; border-left: 1px solid #e5e3dc; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
-  .sidebar-hdr { padding: 10px 14px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
-  .hlist { overflow-y: auto; flex: 1; }
-  .hcard { padding: 11px 14px; border-bottom: 1px solid #f0ede6; cursor: pointer; transition: background .1s; }
-  .hcard:hover { background: #faf9f6; }
-  .hcard.active { background: #eef4ff; border-left: 3px solid #378ADD; padding-left: 11px; }
-  .hprice { font-size: 13px; font-weight: 600; color: #1a1a1a; }
-  .haddr { font-size: 11px; color: #888; margin-top: 2px; line-height: 1.4; }
-  .hmeta { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #999; align-items: center; flex-wrap: wrap; }
-  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .stag { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
-  .empty { padding: 20px 14px; font-size: 13px; color: #aaa; line-height: 1.6; }
+.sidebar { width: 280px; background: #fff; border-left: 1px solid #e5e3dc; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+.sidebar-hdr { padding: 10px 14px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #e5e3dc; flex-shrink: 0; }
+.hlist { overflow-y: auto; flex: 1; }
+.hcard { padding: 11px 14px; border-bottom: 1px solid #f0ede6; cursor: pointer; transition: background .1s; }
+.hcard:hover { background: #faf9f6; }
+.hcard.active { background: #eef4ff; border-left: 3px solid #378ADD; padding-left: 11px; }
+.hprice { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.haddr { font-size: 11px; color: #888; margin-top: 2px; line-height: 1.4; }
+.hmeta { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #999; align-items: center; flex-wrap: wrap; }
+.sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.stag { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+.empty { padding: 20px 14px; font-size: 13px; color: #aaa; line-height: 1.6; }
+.thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
 
-  /* Detail panel */
-  .detail { display: none; position: absolute; inset: 0; background: #f5f4f0; overflow-y: auto; z-index: 10; }
-  .detail.open { display: block; }
-  .detail-inner { max-width: 640px; margin: 0 auto; padding: 20px; }
-  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #666; cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; }
-  .back:hover { color: #1a1a1a; }
-  .dcard { background: #fff; border-radius: 12px; border: 1px solid #e5e3dc; padding: 20px; }
-  .dcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-  .dprice { font-size: 22px; font-weight: 700; color: #1a1a1a; }
-  .daddr { font-size: 13px; color: #888; margin-bottom: 16px; }
-  .dgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-  .dstat { background: #f5f4f0; border-radius: 8px; padding: 10px 12px; }
-  .dstat label { font-size: 10px; color: #999; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .04em; }
-  .dstat span { font-size: 14px; font-weight: 600; color: #1a1a1a; }
-  .section-label { font-size: 11px; color: #999; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
-  .stars { display: flex; gap: 4px; margin-bottom: 16px; }
-  .star { font-size: 22px; cursor: pointer; color: #ddd; line-height: 1; transition: color .1s; }
-  .star.on { color: #C8823A; }
-  .star:hover { color: #C8823A; }
-  textarea { width: 100%; border: 1px solid #e0ddd6; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; background: #fff; color: #1a1a1a; resize: vertical; min-height: 80px; line-height: 1.5; }
-  textarea:focus { outline: none; border-color: #aaa; }
-  .dlink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #378ADD; margin-top: 12px; cursor: pointer; border: none; background: none; padding: 0; text-decoration: none; }
-  .dlink:hover { text-decoration: underline; }
-  .dfooter { margin-top: 16px; padding-top: 14px; border-top: 1px solid #f0ede6; display: flex; gap: 10px; align-items: center; }
-  .ss { font-size: 13px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
-  .btn { padding: 7px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; background: #fff; color: #555; font-family: inherit; }
-  .btn:hover { background: #f5f4f0; }
-  .btn.danger { color: #c0392b; border-color: #f5c6c2; }
-  .btn.danger:hover { background: #fff5f4; }
+/* Detail */
+.detail { display: none; position: absolute; inset: 0; background: #f5f4f0; overflow-y: auto; z-index: 10; }
+.detail.open { display: block; }
+.detail-inner { max-width: 680px; margin: 0 auto; padding: 20px; }
+.back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #666; cursor: pointer; border: none; background: none; padding: 0; margin-bottom: 16px; }
+.back:hover { color: #1a1a1a; }
+.dcard { background: #fff; border-radius: 12px; border: 1px solid #e5e3dc; padding: 20px; margin-bottom: 16px; }
 
-  /* Modal */
-  .modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); align-items: center; justify-content: center; z-index: 100; }
-  .modal-wrap.open { display: flex; }
-  .modal { background: #fff; border-radius: 14px; padding: 22px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.15); }
-  .modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-  .field { margin-bottom: 12px; }
-  .field label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
-  .field input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a1a; }
-  .field input:focus { outline: none; border-color: #999; }
-  .tc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .mactions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-  .geocode-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+/* Photos */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.photo-item { position: relative; aspect-ratio: 4/3; border-radius: 8px; overflow: hidden; background: #f0ede6; }
+.photo-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-del { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.55); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.photo-add { border: 2px dashed #ddd; border-radius: 8px; aspect-ratio: 4/3; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #aaa; font-size: 12px; gap: 4px; transition: border-color .15s; }
+.photo-add:hover { border-color: #999; color: #666; }
+.photo-add span { font-size: 22px; }
+
+/* Edit fields */
+.edit-field { margin-bottom: 12px; }
+.edit-field label { font-size: 11px; color: #999; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.edit-field input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a1a; background: #fff; }
+.edit-field input:focus { outline: none; border-color: #999; }
+.edit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+.view-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.dstat { background: #f5f4f0; border-radius: 8px; padding: 10px 12px; }
+.dstat label { font-size: 10px; color: #999; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .04em; }
+.dstat span { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+
+.section-label { font-size: 11px; color: #999; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; margin-top: 14px; }
+.stars { display: flex; gap: 4px; margin-bottom: 4px; }
+.star { font-size: 22px; cursor: pointer; color: #ddd; line-height: 1; transition: color .1s; }
+.star.on { color: #C8823A; }
+textarea { width: 100%; border: 1px solid #e0ddd6; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; background: #fff; color: #1a1a1a; resize: vertical; min-height: 80px; line-height: 1.5; margin-top: 6px; }
+textarea:focus { outline: none; border-color: #aaa; }
+
+.dlink { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #378ADD; margin-top: 12px; text-decoration: none; }
+.dlink:hover { text-decoration: underline; }
+.dfooter { margin-top: 16px; padding-top: 14px; border-top: 1px solid #f0ede6; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.ss { font-size: 13px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
+.btn { padding: 7px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; background: #fff; color: #555; font-family: inherit; }
+.btn:hover { background: #f5f4f0; }
+.btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; font-weight: 500; }
+.btn.primary:hover { background: #333; }
+.btn.danger { color: #c0392b; border-color: #f5c6c2; }
+.btn.danger:hover { background: #fff5f4; }
+
+.dprice-view { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+.daddr-view { font-size: 13px; color: #888; margin-top: 2px; margin-bottom: 16px; }
+.dcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+
+/* Modal */
+.modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); align-items: center; justify-content: center; z-index: 100; }
+.modal-wrap.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 22px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,.15); max-height: 90vh; overflow-y: auto; }
+.modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+.field { margin-bottom: 12px; }
+.field label { font-size: 11px; color: #888; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.field input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a1a; }
+.field input:focus { outline: none; border-color: #999; }
+.tc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mactions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.hint { font-size: 11px; color: #aaa; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -95,51 +118,52 @@
 <div class="detail" id="detail-view">
   <div class="detail-inner">
     <button class="back" onclick="closeDetail()">← All properties</button>
-    <div class="dcard" id="dcontent"></div>
+    <div id="dcontent"></div>
   </div>
 </div>
 
+<!-- Add modal -->
 <div class="modal-wrap" id="modal">
   <div class="modal">
     <h2>Add property</h2>
     <div class="field"><label>Listing URL (Daft or MyHome)</label><input type="url" id="f-url" placeholder="https://www.daft.ie/..."></div>
-    <div class="field"><label>Full address</label><input type="text" id="f-addr" placeholder="14 Maple Road, Drumcondra, Dublin 9"><div class="geocode-hint">Used to place the pin on the map automatically</div></div>
+    <div class="field"><label>Full address</label><input type="text" id="f-addr" placeholder="14 Maple Road, Drumcondra, Dublin 9"></div>
+    <div class="field"><label>Eircode</label><input type="text" id="f-eircode" placeholder="D09 X2K3" style="text-transform:uppercase"><div class="hint">Pins the property precisely on the map</div></div>
     <div class="field"><label>Asking price</label><input type="text" id="f-price" placeholder="€395,000"></div>
     <div class="tc">
       <div class="field"><label>Beds</label><input type="number" id="f-beds" min="1" max="10" placeholder="3"></div>
       <div class="field"><label>Baths</label><input type="number" id="f-baths" min="1" max="10" placeholder="2"></div>
     </div>
-    <div class="field"><label>Eircode</label><input type="text" id="f-eircode" placeholder="D09 X2K3" style="text-transform:uppercase"><div class="geocode-hint">Used to pin the property precisely on the map</div></div>
     <div class="field"><label>BER</label><input type="text" id="f-ber" placeholder="B2"></div>
     <div class="mactions">
       <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500" onclick="addHouse()">Add property</button>
+      <button class="btn primary" onclick="addHouse()">Add property</button>
     </div>
   </div>
 </div>
+
+<input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
 
 <script>
 const SC = { interested:'#1D9E75', viewing:'#C8823A', offered:'#378ADD', passed:'#9b9b9b' };
 const SL = { interested:'Interested', viewing:'Viewing', offered:'Offered', passed:'Passed' };
 
 let houses = [];
-try { houses = JSON.parse(localStorage.getItem('ht_standalone') || '[]'); } catch(e){}
-let map, markers = {}, activeId = null;
+try { houses = JSON.parse(localStorage.getItem('ht_v4') || '[]'); } catch(e){}
+let map, markers = {}, activeId = null, editingId = null;
 
-function save() { localStorage.setItem('ht_standalone', JSON.stringify(houses)); }
+function save() { try { localStorage.setItem('ht_v4', JSON.stringify(houses)); } catch(e) { alert('Storage full — try removing some photos.'); } }
 
-// Init map centred on Dublin
 map = L.map('map').setView([53.3498, -6.2603], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 19
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19
 }).addTo(map);
 
 function makeIcon(color) {
   return L.divIcon({
     className: '',
     html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:14px;line-height:1">🏠</span></div>`,
-    iconSize: [32,32], iconAnchor:[16,32], popupAnchor:[0,-36]
+    iconSize:[32,32], iconAnchor:[16,32], popupAnchor:[0,-36]
   });
 }
 
@@ -155,27 +179,22 @@ function placeMarker(h) {
 
 function geocode(h, cb) {
   if (h.lat) { cb(); return; }
-  // Prefer eircode — format as "D09 X2K3" for Nominatim
   const eircode = h.eircode ? h.eircode.slice(0,3) + ' ' + h.eircode.slice(3) : '';
   const q = encodeURIComponent(eircode ? eircode + ', Ireland' : (h.address||'') + ', Dublin, Ireland');
   fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1&countrycodes=ie`)
     .then(r => r.json())
     .then(data => {
-      if (data && data[0]) { h.lat = parseFloat(data[0].lat); h.lng = parseFloat(data[0].lon); save(); }
-      else if (eircode && h.address) {
-        // fallback to address if eircode lookup failed
-        const q2 = encodeURIComponent(h.address + ', Ireland');
-        return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q2}&limit=1&countrycodes=ie`)
+      if (data && data[0]) { h.lat = parseFloat(data[0].lat); h.lng = parseFloat(data[0].lon); save(); return; }
+      if (eircode && h.address) {
+        return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(h.address+', Ireland')}&limit=1&countrycodes=ie`)
           .then(r => r.json()).then(d => { if(d&&d[0]){h.lat=parseFloat(d[0].lat);h.lng=parseFloat(d[0].lon);save();} });
       }
-    })
-    .then(() => cb())
-    .catch(() => cb());
+    }).then(() => cb()).catch(() => cb());
 }
 
 function fitAll() {
   const pts = houses.filter(h => h.lat).map(h => [h.lat, h.lng]);
-  if (pts.length > 1) map.fitBounds(pts, { padding: [40,40] });
+  if (pts.length > 1) map.fitBounds(pts, { padding:[40,40] });
   else if (pts.length === 1) map.setView(pts[0], 15);
 }
 
@@ -183,68 +202,186 @@ function render() {
   const list = document.getElementById('hlist');
   const empty = document.getElementById('hempty');
   document.getElementById('cnt').textContent = houses.length ? `(${houses.length})` : '';
-  if (!houses.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  if (!houses.length) { list.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display = 'none';
   list.innerHTML = houses.map(h => {
     const s = h.status || 'interested';
+    const thumb = h.photos && h.photos[0] ? `<img class="thumb" src="${h.photos[0]}" alt="">` : '';
     return `<div class="hcard${activeId===h.id?' active':''}" onclick="openDetail('${h.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        ${thumb}
         <div style="flex:1;min-width:0">
-          <div class="hprice">${h.price ? '€'+h.price : 'Price TBC'}</div>
+          <div style="display:flex;justify-content:space-between">
+            <div class="hprice">${h.price?'€'+h.price:'TBC'}</div>
+            <div class="sdot" style="background:${SC[s]};margin-top:4px"></div>
+          </div>
           <div class="haddr">${h.address||'No address'}</div>
+          <div class="hmeta">
+            ${h.beds?'<span>'+h.beds+' bed</span>':''}
+            ${h.baths?'<span>'+h.baths+' bath</span>':''}
+            ${h.ber?'<span>BER '+h.ber+'</span>':''}
+            ${h.gut?'<span style="color:#C8823A">'+'★'.repeat(h.gut)+'</span>':''}
+          </div>
         </div>
-        <div class="sdot" style="background:${SC[s]};margin-top:4px;flex-shrink:0"></div>
-      </div>
-      <div class="hmeta">
-        ${h.beds?'<span>'+h.beds+' bed</span>':''}
-        ${h.baths?'<span>'+h.baths+' bath</span>':''}
-        ${h.ber?'<span>BER '+h.ber+'</span>':''}
-        ${h.gut?'<span style="color:#C8823A">'+'★'.repeat(h.gut)+'</span>':''}
-        <span class="stag" style="background:${SC[s]}22;color:${SC[s]}">${SL[s]}</span>
       </div>
     </div>`;
   }).join('');
 }
 
+// ---- Detail view ----
+
 function openDetail(id) {
   activeId = id;
-  const h = houses.find(x => x.id === id);
-  if (!h) return;
+  editingId = null;
+  renderDetail();
   document.getElementById('main-view').style.display = 'none';
   document.getElementById('detail-view').classList.add('open');
-  const s = h.status || 'interested';
-  document.getElementById('dcontent').innerHTML = `
-    <div class="dcard-top">
-      <div>
-        <div class="dprice">${h.price ? '€'+h.price : 'Price TBC'}</div>
-        <div class="daddr">${h.address||'—'}</div>
-      </div>
-      <select class="ss" onchange="setStatus('${h.id}',this.value)">
-        ${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}
-      </select>
-    </div>
-    <div class="dgrid">
-      <div class="dstat"><label>Beds</label><span>${h.beds||'—'}</span></div>
-      <div class="dstat"><label>Baths</label><span>${h.baths||'—'}</span></div>
-      <div class="dstat"><label>BER</label><span>${h.ber||'—'}</span></div>
-      <div class="dstat"><label>Eircode</label><span>${h.eircode ? h.eircode.slice(0,3)+' '+h.eircode.slice(3) : '—'}</span></div>
-      <div class="dstat"><label>Source</label><span>${h.source||'—'}</span></div>
-    </div>
-    <div class="section-label">Gut feeling</div>
-    <div class="stars" id="st-${h.id}">
-      ${[1,2,3,4,5].map(n=>`<span class="star${(h.gut||0)>=n?' on':''}" onclick="setGut('${h.id}',${n})">★</span>`).join('')}
-    </div>
-    <div class="section-label">Notes</div>
-    <textarea onchange="setNotes('${h.id}',this.value)" placeholder="First impressions, things to check, pros and cons…">${h.notes||''}</textarea>
-    ${h.url ? `<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing site'}</a>` : ''}
-    <div class="dfooter">
-      <button class="btn danger" onclick="removeHouse('${h.id}')">Remove property</button>
-    </div>`;
   render();
 }
 
+function renderDetail() {
+  const h = houses.find(x => x.id === activeId);
+  if (!h) return;
+  const s = h.status || 'interested';
+  const photos = h.photos || [];
+
+  const photoGridHTML = `
+    <div class="photo-grid" id="photo-grid">
+      ${photos.map((p,i) => `
+        <div class="photo-item">
+          <img src="${p}" alt="Photo ${i+1}">
+          <button class="photo-del" onclick="deletePhoto('${h.id}',${i})" title="Remove">×</button>
+        </div>`).join('')}
+      <div class="photo-add" onclick="triggerPhotoUpload('${h.id}')">
+        <span>+</span>
+        <div>Add photos</div>
+      </div>
+    </div>`;
+
+  if (editingId === h.id) {
+    // EDIT MODE
+    document.getElementById('dcontent').innerHTML = `
+      <div class="dcard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:600">Edit property</div>
+          <button class="btn" onclick="cancelEdit()">Cancel</button>
+        </div>
+        ${photoGridHTML}
+        <div class="edit-grid">
+          <div class="edit-field" style="grid-column:1/-1"><label>Address</label><input id="e-addr" value="${esc(h.address||'')}"></div>
+          <div class="edit-field" style="grid-column:1/-1"><label>Listing URL</label><input type="url" id="e-url" value="${esc(h.url||'')}"></div>
+          <div class="edit-field"><label>Price</label><input id="e-price" value="${esc(h.price||'')}"></div>
+          <div class="edit-field"><label>Eircode</label><input id="e-eircode" value="${esc(h.eircode||'')}" style="text-transform:uppercase"></div>
+          <div class="edit-field"><label>BER</label><input id="e-ber" value="${esc(h.ber||'')}"></div>
+          <div class="edit-field"><label>Beds</label><input type="number" id="e-beds" value="${esc(h.beds||'')}" min="1" max="20"></div>
+          <div class="edit-field"><label>Baths</label><input type="number" id="e-baths" value="${esc(h.baths||'')}" min="1" max="20"></div>
+          <div class="edit-field"><label>Status</label>
+            <select id="e-status" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 11px;font-size:13px;font-family:inherit;background:#fff">
+              ${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:4px">
+          <button class="btn primary" onclick="saveEdit('${h.id}')">Save changes</button>
+        </div>
+      </div>`;
+  } else {
+    // VIEW MODE
+    document.getElementById('dcontent').innerHTML = `
+      <div class="dcard">
+        ${photoGridHTML}
+        <div class="dcard-top">
+          <div>
+            <div class="dprice-view">${h.price?'€'+h.price:'Price TBC'}</div>
+            <div class="daddr-view">${h.address||'—'}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="ss" onchange="setStatus('${h.id}',this.value)">
+              ${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}
+            </select>
+            <button class="btn" onclick="startEdit('${h.id}')">✏️ Edit</button>
+          </div>
+        </div>
+        <div class="view-grid">
+          <div class="dstat"><label>Beds</label><span>${h.beds||'—'}</span></div>
+          <div class="dstat"><label>Baths</label><span>${h.baths||'—'}</span></div>
+          <div class="dstat"><label>BER</label><span>${h.ber||'—'}</span></div>
+          <div class="dstat"><label>Eircode</label><span>${h.eircode?h.eircode.slice(0,3)+' '+h.eircode.slice(3):'—'}</span></div>
+          <div class="dstat"><label>Source</label><span>${h.source||'—'}</span></div>
+          <div class="dstat"><label>Photos</label><span>${photos.length}</span></div>
+        </div>
+        <div class="section-label">Gut feeling</div>
+        <div class="stars" id="st-${h.id}">
+          ${[1,2,3,4,5].map(n=>`<span class="star${(h.gut||0)>=n?' on':''}" onclick="setGut('${h.id}',${n})">★</span>`).join('')}
+        </div>
+        <div class="section-label">Notes</div>
+        <textarea onchange="setNotes('${h.id}',this.value)" placeholder="First impressions, things to check, pros and cons…">${h.notes||''}</textarea>
+        ${h.url?`<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing site'}</a>`:''}
+        <div class="dfooter">
+          <button class="btn danger" onclick="removeHouse('${h.id}')">Remove property</button>
+        </div>
+      </div>`;
+  }
+}
+
+function esc(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function startEdit(id) { editingId = id; renderDetail(); }
+function cancelEdit() { editingId = null; renderDetail(); }
+
+function saveEdit(id) {
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  const newEircode = document.getElementById('e-eircode').value.trim().toUpperCase().replace(/\s/g,'');
+  const addrChanged = document.getElementById('e-addr').value.trim() !== h.address;
+  const eircodeChanged = newEircode !== h.eircode;
+  h.address = document.getElementById('e-addr').value.trim();
+  h.url = document.getElementById('e-url').value.trim();
+  h.price = document.getElementById('e-price').value.replace(/[€,\s]/g,'');
+  h.eircode = newEircode;
+  h.ber = document.getElementById('e-ber').value.trim().toUpperCase();
+  h.beds = document.getElementById('e-beds').value;
+  h.baths = document.getElementById('e-baths').value;
+  h.status = document.getElementById('e-status').value;
+  // Re-geocode if address or eircode changed
+  if (addrChanged || eircodeChanged) { h.lat = null; h.lng = null; }
+  save(); editingId = null; renderDetail(); render();
+  if (!h.lat) geocode(h, () => { placeMarker(h); render(); });
+  else { placeMarker(h); }
+}
+
+// ---- Photos ----
+let _photoTargetId = null;
+function triggerPhotoUpload(id) { _photoTargetId = id; document.getElementById('photo-input').click(); }
+
+function handlePhotos(e) {
+  const h = houses.find(x => x.id === _photoTargetId);
+  if (!h) return;
+  if (!h.photos) h.photos = [];
+  const files = Array.from(e.target.files);
+  let done = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      h.photos.push(ev.target.result);
+      done++;
+      if (done === files.length) { save(); renderDetail(); render(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function deletePhoto(id, idx) {
+  const h = houses.find(x => x.id === id);
+  if (!h || !h.photos) return;
+  h.photos.splice(idx, 1);
+  save(); renderDetail(); render();
+}
+
+// ---- Other actions ----
 function closeDetail() {
-  activeId = null;
+  activeId = null; editingId = null;
   document.getElementById('main-view').style.display = 'flex';
   document.getElementById('detail-view').classList.remove('open');
   setTimeout(() => map.invalidateSize(), 50);
@@ -265,6 +402,7 @@ function setGut(id, val) {
 }
 function setNotes(id, val) { const h = houses.find(x => x.id === id); if (h) { h.notes = val; save(); } }
 function removeHouse(id) {
+  if (!confirm('Remove this property?')) return;
   houses = houses.filter(x => x.id !== id);
   if (markers[id]) { markers[id].remove(); delete markers[id]; }
   save(); closeDetail();
@@ -288,14 +426,13 @@ function addHouse() {
     beds: document.getElementById('f-beds').value,
     baths: document.getElementById('f-baths').value,
     ber: document.getElementById('f-ber').value.trim().toUpperCase(),
-    source, status: 'interested', gut: 0, notes: ''
+    source, status: 'interested', gut: 0, notes: '', photos: []
   };
   houses.push(h);
   save(); closeModal(); render();
   geocode(h, () => { placeMarker(h); fitAll(); render(); });
 }
 
-// Load existing
 houses.forEach(h => geocode(h, () => { placeMarker(h); }));
 setTimeout(fitAll, 800);
 render();
