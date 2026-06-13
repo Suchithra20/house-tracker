@@ -124,7 +124,10 @@ textarea:focus { outline: none; border-color: #aaa; }
       <div class="field"><label>Beds</label><input type="number" id="f-beds" min="1" max="10" placeholder="3"></div>
       <div class="field"><label>Baths</label><input type="number" id="f-baths" min="1" max="10" placeholder="2"></div>
     </div>
-    <div class="field"><label>BER</label><input type="text" id="f-ber" placeholder="B2"></div>
+    <div class="tc">
+      <div class="field"><label>Floor area (m²)</label><input type="number" id="f-area" min="1" placeholder="85"></div>
+      <div class="field"><label>BER</label><input type="text" id="f-ber" placeholder="B2"></div>
+    </div>
     <div class="mactions">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn primary" onclick="addHouse()">Add property</button>
@@ -305,6 +308,7 @@ function renderDetail() {
         <div class="edit-field" style="grid-column:1/-1"><label>Listing URL</label><input type="url" id="e-url" value="${esc(h.url||'')}"></div>
         <div class="edit-field"><label>Price</label><input id="e-price" value="${esc(h.price||'')}"></div>
         <div class="edit-field"><label>Eircode</label><input id="e-eircode" value="${esc(h.eircode||'')}" style="text-transform:uppercase"></div>
+        <div class="edit-field"><label>Floor area (m²)</label><input type="number" id="e-area" value="${esc(h.area||'')}" min="1"></div>
         <div class="edit-field"><label>BER</label><input id="e-ber" value="${esc(h.ber||'')}"></div>
         <div class="edit-field"><label>Beds</label><input type="number" id="e-beds" value="${esc(h.beds||'')}" min="1" max="20"></div>
         <div class="edit-field"><label>Baths</label><input type="number" id="e-baths" value="${esc(h.baths||'')}" min="1" max="20"></div>
@@ -362,6 +366,7 @@ async function saveEdit(id) {
   h.url = document.getElementById('e-url').value.trim();
   h.price = document.getElementById('e-price').value.replace(/[€,\s]/g,'');
   h.eircode = newEircode;
+  h.area = document.getElementById('e-area').value;
   h.ber = document.getElementById('e-ber').value.trim().toUpperCase();
   h.beds = document.getElementById('e-beds').value;
   h.baths = document.getElementById('e-baths').value;
@@ -461,7 +466,7 @@ async function removeHouse(id) {
 function openModal() { document.getElementById('modal').classList.add('open'); }
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
-  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-ber'].forEach(id => document.getElementById(id).value = '');
+  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-area','f-ber'].forEach(id => document.getElementById(id).value = '');
   setTimeout(() => map.invalidateSize(), 200);
 }
 
@@ -477,7 +482,7 @@ async function addHouse() {
     beds: document.getElementById('f-beds').value,
     baths: document.getElementById('f-baths').value,
     ber: document.getElementById('f-ber').value.trim().toUpperCase(),
-    source, status: 'interested', gut: 0, notes: '', photos: []
+    area: document.getElementById('f-area').value, source, status: 'interested', gut: 0, notes: '', photos: []
   };
   houses.push(h);
   await dbUpsert(h); closeModal();
