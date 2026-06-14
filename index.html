@@ -630,9 +630,10 @@ async function fetchStopsNear(lat,lng){
   const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
   
   // Try multiple CORS proxies
+  const base='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
   const proxies=[
-    `https://corsproxy.io/?${encodeURIComponent('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q))}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q))}`,
+    'https://corsproxy.io/?'+encodeURIComponent(base),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
   ];
   
   for(const url of proxies){
@@ -660,7 +661,8 @@ async function fetchStopsNear(lat,lng){
 
 async function fetchRoute(fromLat,fromLng,toLat,toLng){
   try{
-    const url=`https://corsproxy.io/?${encodeURIComponent(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`)}`;
+    const osrm='https://router.project-osrm.org/route/v1/driving/'+fromLng+','+fromLat+';'+toLng+','+toLat+'?overview=full&geometries=geojson';
+    const url='https://corsproxy.io/?'+encodeURIComponent(osrm);
     const r=await fetch(url);
     if(!r.ok) return null;
     const d=await r.json();
