@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>House Tracker — Dublin</title>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw&libraries=places,geometry"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -628,25 +627,6 @@ function stopType(tags){
 const ARISTA_ROUTES = new Set(['39','39A','39B','39C','39D','70','70D','70X','145','747','151','152','49','54A','77A','77X','27','27A','27B','27X','130','140','142','143','120','1','7','7A','7B','2','3','3A','Red','Luas Red','DART','Enterprise','G1','G2','G3','G4','C1','C2','C3','C4','D1','D2','F1','F2','N1','N2','N4','N6','N7','N8','X1','X2']);
 
 
-// Google Places JS SDK — no CORS issues, works in browser
-let _placesService = null;
-function getPlacesService(){
-  if(_placesService) return _placesService;
-  if(window.google?.maps?.places){
-    // PlacesService needs a map or div
-    _placesService = new google.maps.places.PlacesService(document.getElementById('map'));
-  }
-  return _placesService;
-}
-
-function nearbySearchPromise(svc, req){
-  return new Promise(resolve=>{
-    svc.nearbySearch(req,(results,status)=>{
-      if(status===google.maps.places.PlacesServiceStatus.OK) resolve(results||[]);
-      else resolve([]);
-    });
-  });
-}
 
 async function fetchStopsNear(lat,lng,radiusM=2000){
   const svc = getPlacesService();
@@ -686,19 +666,16 @@ async function fetchStopsWithRoutes(lat,lng,radiusM=2000){
 
 
 function fetchRoute(fromLat,fromLng,toLat,toLng){
-  return new Promise(resolve=>{
-    if(!window.google?.maps?.DirectionsService){ resolve(null); return; }
-    const svc = new google.maps.DirectionsService();
-    svc.route({
-      origin:{lat:fromLat,lng:fromLng},
-      destination:{lat:toLat,lng:toLng},
-      travelMode: google.maps.TravelMode.DRIVING
-    },(res,status)=>{
-      if(status!=='OK'){ resolve(null); return; }
-      const path = res.routes[0].overview_path;
-      resolve(path.map(p=>[p.lat(),p.lng()]));
-    });
-  });
+  return (async()=>{
+    try{
+      const osrm='https://router.project-osrm.org/route/v1/driving/'+fromLng+','+fromLat+';'+toLng+','+toLat+'?overview=full&geometries=geojson';
+      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(osrm));
+      if(!r.ok) return null;
+      const d=await r.json();
+      if(d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+    }catch(e){ console.warn('Route failed:',e.message); }
+    return null;
+  })();
 }
 async function fetchRoutesForStop(placeId){
   // Google Places Details gives us the stop name — route numbers not available via Places
