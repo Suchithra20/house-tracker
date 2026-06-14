@@ -528,8 +528,9 @@ function drawAreaOverlay(){
   const maxA=Math.max(...areas),minA=Math.min(...areas);
   located.forEach(h=>{
     const sqm=parseFloat(h.area)||80;
-    const radius=120+((sqm-minA)/(Math.max(maxA-minA,1)))*280;
-    const c=L.circle([h.lat,h.lng],{radius,color:'#378ADD',fillColor:'#378ADD',fillOpacity:0.18,weight:2,opacity:0.8}).addTo(map);
+    // Bigger circles: min 250m, max 600m radius
+    const radius=250+((sqm-minA)/(Math.max(maxA-minA,1)))*350;
+    const c=L.circle([h.lat,h.lng],{radius,color:'#378ADD',fillColor:'#378ADD',fillOpacity:0.15,weight:2,opacity:0.7}).addTo(map);
     c.bindTooltip(h.area?`${sqm} m²`:'Area unknown',{permanent:true,direction:'top',offset:[0,-8]});
     c.openTooltip();
     areaCircles.push(c);
@@ -649,7 +650,7 @@ function clearHoverRoute(){
   }
 }
 
-function attachStopHover(marker,stop,type,name){
+function attachStopHoverWithRoutes(marker,stop,type,name,relevance){
   marker._stopType=type;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const el=marker.getElement();
@@ -657,36 +658,30 @@ function attachStopHover(marker,stop,type,name){
     el.style.cursor='pointer';
 
     el.addEventListener('mouseenter',async()=>{
-      // Clear any previous hover immediately
       clearHoverRoute();
       activeStopMarker=marker;
       marker.setIcon(makeStopIcon(type,true));
 
       const km=(map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
+      const routeStr=relevance.routes.join(', ');
+      const aristaLine=relevance.aristaStop?`<span style="color:#1D9E75;font-size:11px">↓ ${relevance.aristaStop}</span><br>`:'';
 
-      // Show tooltip immediately
+      // Show tooltip immediately with route info (already fetched)
       marker.unbindTooltip();
       marker.bindTooltip(
-        `<div style="font-size:12px;line-height:1.7;min-width:130px;pointer-events:none"><b>${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
+        `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none">
+          <b style="font-size:13px">${STOP_ICONS[type]} ${routeStr}</b><br>
+          ${name}<br>
+          ${aristaLine}
+          <span style="color:#999">${km} km to Arista</span>
+        </div>`,
         {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
       ).openTooltip();
 
-      // Fetch route
+      // Fetch and draw road route
       const coords=await fetchRoute(stop.lat,stop.lon,ARISTA.lat,ARISTA.lng);
-      // Only draw if this stop is still active
       if(activeStopMarker===marker&&coords){
         hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);
-      }
-
-      // Fetch route numbers and update tooltip
-      const routes=await fetchRoutesForStop(stop.id);
-      if(activeStopMarker===marker){
-        const routeStr=routes.length?routes.join(', '):'';
-        marker.unbindTooltip();
-        marker.bindTooltip(
-          `<div style="font-size:12px;line-height:1.7;min-width:130px;pointer-events:none"><b>${TYPE_LABELS[type]}${routeStr?' · '+routeStr:''}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
-          {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
-        ).openTooltip();
       }
     });
 
@@ -696,9 +691,53 @@ function attachStopHover(marker,stop,type,name){
   }));
 }
 
+// Get route relations passing through a stop
+async function getStopRoutes(stopId){
+  try{
+    const q=`[out:json][timeout:12];node(${stopId});rel(bn)["route"~"bus|train|tram|light_rail"];out tags;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+    const d=await r.json();
+    return d.elements||[];
+  }catch(e){return[];}
+}
+
+// Get stops on a route that are near Arista
+async function routeStopsNearArista(routeId){
+  try{
+    const d=0.015;
+    const bbox=`${ARISTA.lat-d},${ARISTA.lng-d*1.5},${ARISTA.lat+d},${ARISTA.lng+d*1.5}`;
+    const q=`[out:json][timeout:12];rel(${routeId});node(r)(${bbox})["highway"="bus_stop"];out body;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+    const d2=await r.json();
+    return d2.elements||[];
+  }catch(e){return[];}
+}
+
+// Check if a stop has a direct/one-change route to Arista
+// Returns {direct: bool, routes: string[], aristaStop: string}
+async function checkStopRelevance(stop){
+  const routes=await getStopRoutes(stop.id);
+  if(!routes.length) return null;
+
+  const directRoutes=[];
+  let aristaStopName='';
+
+  for(const route of routes){
+    const nearArista=await routeStopsNearArista(route.id);
+    if(nearArista.length>0){
+      const ref=route.tags.ref||route.tags.name||'';
+      if(ref) directRoutes.push(ref);
+      if(!aristaStopName&&nearArista[0].tags) aristaStopName=nearArista[0].tags.name||'';
+    }
+  }
+
+  if(!directRoutes.length) return null;
+  return {routes:directRoutes, aristaStop:aristaStopName};
+}
+
 async function drawTransportOverlay(){
   console.log('drawTransportOverlay: houses with lat=',houses.filter(h=>h.lat).length);
-  syncStatus('saving','Loading stops…');
+  syncStatus('saving','Finding direct routes to Arista…');
 
   // Arista marker
   const am=L.marker([ARISTA.lat,ARISTA.lng],{
@@ -707,26 +746,38 @@ async function drawTransportOverlay(){
   }).addTo(map);
   transportLines.push(am);
 
-  const locs=[...houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng})),{lat:ARISTA.lat,lng:ARISTA.lng}];
+  const locs=houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng}));
   const seen=new Set();
+  let shown=0;
 
   for(const loc of locs){
     try{
       const stops=await fetchStopsNear(loc.lat,loc.lng);
-      console.log(`Stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}:`,stops.length);
-      stops.forEach(stop=>{
-        if(seen.has(stop.id)) return;
+      console.log(`Checking ${stops.length} stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}`);
+
+      for(const stop of stops){
+        if(seen.has(stop.id)) continue;
         seen.add(stop.id);
         const tags=stop.tags||{};
         const type=stopType(tags);
         const name=tags.name||tags['name:en']||'Stop';
+
+        // Check if this stop has a direct route to Arista
+        const relevance=await checkStopRelevance(stop);
+        if(!relevance) continue; // skip stops with no route to Arista
+
+        shown++;
         const m=L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
-        attachStopHover(m,stop,type,name);
+        // Pass relevance info into hover
+        attachStopHoverWithRoutes(m,stop,type,name,relevance);
         transportLines.push(m);
-      });
+      }
     }catch(e){console.error('Stop fetch error:',e);}
   }
-  syncStatus('ok','Hover a stop → see route to Arista');
+
+  const msg=shown>0?`${shown} direct-route stops to Arista`:'No direct routes found near properties';
+  syncStatus('ok',msg);
+  console.log(msg);
 }
 
 // ---- Boot ----
