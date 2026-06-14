@@ -624,242 +624,123 @@ function stopType(tags){
 // Actually: use TFI (Transport for Ireland) GTFS-RT or hardcode known Dublin stops
 // REAL FIX: use Leaflet + OSM tiles already loaded, fetch via a public proxy
 
-// Known routes serving IFSC/Georges Dock/Arista area
-const ARISTA_ROUTES = new Set([
-  // Dublin Bus routes through city centre / quays / IFSC
-  '1','2','3','3A','7','7A','7B','7D',
-  '9','13','14','14A','15','15A','15B','15D',
-  '25','25A','25B','25D','25X',
-  '26','27','27A','27B','27X',
-  '37','38','38A','38B','38C','38D',
-  '39','39A','39B','39C','39D','39X',
-  '40','40A','40B','40D','41','41A','41B','41C','41X',
-  '46A','49','51D','51X','53','54A','56A',
-  '65','65B','66','66A','66B','66X',
-  '67','67X','68','68A','69','69X',
-  '70','70D','70X','77A','77X',
-  '84','84A','84X','102','104','111','114','116','118',
-  '120','123','130','140','142','143','145','150','151','152',
-  '161','220','236','238','239','270','747',
-  // Go-Ahead Ireland
-  'G1','G2','G3','G4','G5',
-  // BusConnects orbital/spine
-  'C1','C2','C3','C4','D1','D2','F1','F2','H1','H2','H3',
-  'L52','L53','L54','L56','L57','L58',
-  'N1','N2','N4','N6','N7','N8',
-  'X1','X2','X3',
-  // Luas Red Line (stops near Arista: Mayor Square, Georges Dock, The Point)
-  'Red','Luas Red','Luas',
-  // Irish Rail / DART / Commuter
-  'DART','Commuter','Enterprise','Northern Commuter','Southern Commuter',
-  'Maynooth Line','Hazelhatch Line','Kildare Line',
-]);
+// ========== TRANSPORT OVERLAY ==========
+// Goal: show per-property transit score — how good is public transport to Arista?
+// Uses Google Maps Directions API (already key available) via fetch with cors proxy
+// Shows a badge on each property pin with estimated transit time to Arista
 
+const TRANSIT_CACHE = {}; // cache results by property id
 
-
-async function fetchStopsNear(lat,lng,radiusM=2000){
-  const d = radiusM/111000;
-  const bbox = (lat-d)+','+(lng-d)+','+(lat+d)+','+(lng+d);
-  const q = '[out:json][timeout:15];(node["highway"="bus_stop"]('+bbox+');node["railway"~"station|tram_stop"]('+bbox+'););out body;';
-  const base = 'https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
-  const proxies = [
-    'https://corsproxy.io/?'+encodeURIComponent(base),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
-  ];
-  for(const url of proxies){
-    try{
-      const r = await fetch(url);
-      if(!r.ok){ console.warn('Proxy HTTP',r.status); continue; }
-      const data = JSON.parse(await r.text());
-      const els = data.elements||[];
-      console.log('Stops found:',els.length,'near',lat.toFixed(3),lng.toFixed(3),'via',url.slice(0,30));
-      return els.map(s=>({
-        id:s.id, lat:s.lat, lon:s.lon, tags:s.tags||{},
-        _type:s.tags&&s.tags.railway==='station'?'train':s.tags&&s.tags.railway==='tram_stop'?'luas':'bus'
-      }));
-    }catch(e){ console.warn('Proxy error:',e.message); }
-  }
-  console.error('All proxies failed');
-  return [];
+function makeTransitBadge(minutes, walks) {
+  // Color: green <30min, amber 30-45, red >45
+  const color = minutes < 30 ? '#1D9E75' : minutes < 45 ? '#C8823A' : '#e74c3c';
+  const label = minutes < 999 ? minutes+'min' : '?';
+  return L.divIcon({
+    className: '',
+    html: `<div style="background:${color};color:#fff;border-radius:20px;padding:3px 8px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3);border:2px solid #fff">${label}</div>`,
+    iconAnchor: [-18, 8]
+  });
 }
 
-async function getStopRouteRefs(stopId){
-  const q='[out:json][timeout:8];node('+stopId+');rel(bn)["route"~"bus|train|tram"];out tags;';
-  const base='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
-  const proxies=[
-    'https://corsproxy.io/?'+encodeURIComponent(base),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
-  ];
-  for(const url of proxies){
-    try{
-      const r=await fetch(url);
-      if(!r.ok) continue;
-      const d=JSON.parse(await r.text());
-      return (d.elements||[]).map(e=>e.tags&&(e.tags.ref||e.tags.name)||'').filter(Boolean);
-    }catch(e){}
-  }
-  return[];
-}
-async function fetchStopsWithRoutes(lat,lng,radiusM=2000){
-  const stops = await fetchStopsNear(lat,lng,radiusM);
-  return {stops, stopRoutes:{}};
-}
-
-
-function fetchRoute(fromLat,fromLng,toLat,toLng){
-  return (async()=>{
-    try{
-      const osrm='https://router.project-osrm.org/route/v1/driving/'+fromLng+','+fromLat+';'+toLng+','+toLat+'?overview=full&geometries=geojson';
-      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(osrm));
-      if(!r.ok) return null;
-      const d=await r.json();
-      if(d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-    }catch(e){ console.warn('Route failed:',e.message); }
+async function getTransitTime(lat, lng) {
+  // Use Google Maps Directions API (REST) via corsproxy
+  const origin = lat+','+lng;
+  const dest = ARISTA.lat+','+ARISTA.lng;
+  const url = 'https://maps.googleapis.com/maps/api/directions/json'
+    +'?origin='+encodeURIComponent(origin)
+    +'&destination='+encodeURIComponent(dest)
+    +'&mode=transit'
+    +'&departure_time=now'
+    +'&key=AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
+  
+  const proxied = 'https://corsproxy.io/?'+encodeURIComponent(url);
+  try {
+    const r = await fetch(proxied);
+    if(!r.ok) return null;
+    const d = await r.json();
+    if(d.status !== 'OK' || !d.routes[0]) return null;
+    const leg = d.routes[0].legs[0];
+    const mins = Math.round(leg.duration.value / 60);
+    // Get transit steps for route summary
+    const steps = leg.steps.filter(s=>s.travel_mode==='TRANSIT');
+    const routes = steps.map(s=>s.transit_details?.line?.short_name||s.transit_details?.line?.name||'').filter(Boolean);
+    return { mins, routes, summary: leg.duration.text };
+  } catch(e) {
+    console.warn('Transit time failed:', e.message);
     return null;
-  })();
-}
-async function fetchRoutesForStop(placeId){
-  // Google Places Details gives us the stop name — route numbers not available via Places
-  // Return empty so hover tooltip just shows stop name + distance
-  return [];
-}
-
-function clearHoverRoute(){
-  if(hoverRouteLayer){hoverRouteLayer.remove();hoverRouteLayer=null;}
-  if(activeStopMarker){
-    const type=activeStopMarker._stopType;
-    activeStopMarker.setIcon(makeStopIcon(type,false));
-    activeStopMarker.unbindTooltip();
-    activeStopMarker=null;
   }
 }
 
-function attachStopHoverWithRoutes(marker,stop,type,name,preloadedRoutes){
-  marker._stopType=type;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const el=marker.getElement();
-    if(!el) return;
-    el.style.cursor='pointer';
+let transitMarkers = [];
 
-    el.addEventListener('mouseenter',async()=>{
-      clearHoverRoute();
-      activeStopMarker=marker;
-      marker.setIcon(makeStopIcon(type,true));
-
-      const km=(map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
-
-      // Immediate tooltip — show preloaded routes right away if available
-      const initialRouteStr = preloadedRoutes&&preloadedRoutes.length ? preloadedRoutes.join(', ') : '';
-      marker.unbindTooltip();
-      marker.bindTooltip(
-        `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none"><b>${STOP_ICONS[type]} ${initialRouteStr||TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span>${initialRouteStr?'':'<br><i style="color:#bbb;font-size:11px">Loading routes…</i>'}</div>`,
-        {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
-      ).openTooltip();
-
-      // Fetch route refs + road route in parallel on hover
-      const [routeRefs, coords] = await Promise.all([
-        preloadedRoutes&&preloadedRoutes.length ? Promise.resolve(preloadedRoutes) : getStopRouteRefs(stop.id),
-        fetchRoute(stop.lat,stop.lon,ARISTA.lat,ARISTA.lng)
-      ]);
-      const routes = (routeRefs||[]).filter(r=>ARISTA_ROUTES.has(r));
-
-      if(activeStopMarker!==marker) return;
-
-      if(coords){
-        hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);
-      }
-
-      // Show routes that serve Arista, or all routes if none matched
-      const allRefs = await getStopRouteRefs(stop.id);
-      const aristaRefs = allRefs.filter(r=>ARISTA_ROUTES.has(r));
-      const routeStr = aristaRefs.length ? aristaRefs.join(', ') :
-                       allRefs.length ? allRefs.join(', ')+' (check connections)' :
-                       'Loading…';
-      marker.unbindTooltip();
-      marker.bindTooltip(
-        `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none"><b>${STOP_ICONS[type]} ${routeStr}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
-        {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
-      ).openTooltip();
-    });
-
-    el.addEventListener('mouseleave',()=>{
-      clearHoverRoute();
-    });
-  }));
-}
-
-// Per-property loading spinner on map
-function makeLoadingMarker(lat, lng, label) {
-  const m = L.marker([lat, lng], {
-    icon: L.divIcon({
-      className: '',
-      html: `<div style="background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:4px 9px;font-size:11px;color:#888;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.15);display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border:2px solid #ccc;border-top-color:#378ADD;border-radius:50%;animation:spin .7s linear infinite"></span>${label}</div>`,
-      iconAnchor: [60, 12]
-    }),
-    zIndexOffset: 500
-  }).addTo(map);
-  return m;
-}
-
-async function drawTransportOverlay(){
-  syncStatus('saving','Loading stops…');
-
-  // Add spin keyframe once
-  if(!document.getElementById('spin-style')){
-    const s=document.createElement('style');
-    s.id='spin-style';
-    s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
-    document.head.appendChild(s);
-  }
+async function drawTransportOverlay() {
+  syncStatus('saving', 'Getting transit times to Arista…');
 
   // Arista marker
-  const am=L.marker([ARISTA.lat,ARISTA.lng],{
-    icon:L.divIcon({className:'',html:`<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`,iconAnchor:[36,14]}),
-    zIndexOffset:1000
+  const am = L.marker([ARISTA.lat, ARISTA.lng], {
+    icon: L.divIcon({className:'', html:`<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`, iconAnchor:[36,14]}),
+    zIndexOffset: 1000
   }).addTo(map);
   transportLines.push(am);
 
-  const RADIUS_M = 2000;
-  const located = houses.filter(h=>h.lat);
-  const seen = new Set();
-  let totalShown = 0;
+  const located = houses.filter(h => h.lat);
+  if(!located.length) { syncStatus('ok', 'No pinned properties'); return; }
 
-  // Per-property: fetch nearby stops + get their route refs in ONE batch query each
+  // Load all in parallel, show spinner badge while loading
   const promises = located.map(async h => {
-    const loader = makeLoadingMarker(h.lat, h.lng, 'Loading stops…');
-    transportLines.push(loader);
+    // Show loading badge
+    const loadBadge = L.marker([h.lat, h.lng], {
+      icon: L.divIcon({className:'', html:`<div style="background:#888;color:#fff;border-radius:20px;padding:3px 8px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3);border:2px solid #fff">…</div>`, iconAnchor:[-18,8]}),
+      zIndexOffset: 500, interactive: false
+    }).addTo(map);
+    transportLines.push(loadBadge);
 
-    try {
-      // Single batch query: get stops + their route refs together
-      const {stops, stopRoutes} = await fetchStopsWithRoutes(h.lat, h.lng, RADIUS_M);
-      loader.remove();
-
-      // Show all stops within 2km — route filtering happens on hover
-      // (fetching per-stop routes in bulk is too slow/unreliable)
-      const filtered = stops;
-      console.log(h.address, filtered.length, 'stops within 2km');
-
-      let count = 0;
-      filtered.forEach(stop => {
-        if(seen.has(stop.id)) return;
-        seen.add(stop.id);
-        const tags = stop.tags||{};
-        const type = stop._type||stopType(tags);
-        const name = tags.name||tags['name:en']||'Stop';
-        const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
-        attachStopHoverWithRoutes(m,stop,type,name,[]);
-        transportLines.push(m);
-        count++; totalShown++;
-      });
-    } catch(e) {
-      loader.remove();
-      console.error('Stop fetch failed for', h.address, e);
+    // Check cache
+    let result = TRANSIT_CACHE[h.id];
+    if(!result) {
+      result = await getTransitTime(h.lat, h.lng);
+      if(result) TRANSIT_CACHE[h.id] = result;
     }
+
+    loadBadge.remove();
+
+    if(!result) {
+      // Show grey badge if failed
+      const badge = L.marker([h.lat, h.lng], {
+        icon: L.divIcon({className:'', html:`<div style="background:#aaa;color:#fff;border-radius:20px;padding:3px 8px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3);border:2px solid #fff">N/A</div>`, iconAnchor:[-18,8]}),
+        zIndexOffset: 500, interactive: false
+      }).addTo(map);
+      transportLines.push(badge);
+      return;
+    }
+
+    // Show time badge next to property pin
+    const badge = L.marker([h.lat, h.lng], {
+      icon: makeTransitBadge(result.mins),
+      zIndexOffset: 500
+    }).addTo(map);
+
+    // Hover on badge: show route breakdown
+    badge.bindTooltip(
+      `<div style="font-size:12px;line-height:1.7;min-width:160px">
+        <b>${result.mins} min to Arista</b><br>
+        ${result.routes.length ? '🚌 '+result.routes.join(' → ') : 'Transit route'}<br>
+        <span style="color:#999;font-size:11px">via Google Maps</span>
+      </div>`,
+      {direction:'top', opacity:1, offset:[0,-8]}
+    );
+    transportLines.push(badge);
   });
 
   await Promise.all(promises);
-  syncStatus('ok', totalShown + ' stops within 2km — hover for route to Arista');
+
+  // Sort summary in console
+  const results = located.map(h=>({addr:h.address, ...TRANSIT_CACHE[h.id]}))
+    .filter(r=>r.mins).sort((a,b)=>a.mins-b.mins);
+  console.log('Transit ranking:', results.map(r=>r.addr+': '+r.mins+'min').join(' | '));
+  syncStatus('ok', 'Transit times loaded — 🟢<30min 🟠<45min 🔴>45min');
 }
+
 
 // ---- Boot ----
 (async()=>{
