@@ -577,7 +577,12 @@ async function drawGreenOverlay(){
   const bbox=`${Math.min(...lats)-pad},${Math.min(...lngs)-pad},${Math.max(...lats)+pad},${Math.max(...lngs)+pad}`;
   const q=`[out:json][timeout:25];(way["leisure"="park"](${bbox});way["leisure"="nature_reserve"](${bbox});way["landuse"="grass"](${bbox});way["landuse"="recreation_ground"](${bbox});way["leisure"="garden"](${bbox}););out geom;`;
   try{
-    const elements=await overpassQuery(q);
+    // Use a CORS proxy for Overpass green spaces query
+    const proxyUrl=`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`;
+    const r=await fetch(proxyUrl,{headers:{'Accept':'application/json'}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const elements=d.elements||[];
     const features=(elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>({
       type:'Feature',properties:{name:(el.tags&&el.tags.name)||''},
       geometry:{type:'Polygon',coordinates:[el.geometry.map(p=>[p.lon,p.lat])]}
@@ -610,51 +615,41 @@ function stopType(tags){
   return 'bus';
 }
 
-async function overpassQuery(q){
-  // Try GET first (simpler, better CORS), fallback to POST
-  const encoded=encodeURIComponent(q);
-  const mirrors=[
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter'
-  ];
-  for(const mirror of mirrors){
-    try{
-      const r=await fetch(`${mirror}?data=${encoded}`,{
-        headers:{'Accept':'application/json'}
-      });
-      if(r.ok){
-        const d=await r.json();
-        console.log(`Overpass OK from ${mirror}, elements:`,d.elements?.length);
-        return d.elements||[];
-      }
-    }catch(e){
-      console.warn(`Overpass GET failed on ${mirror}:`,e.message);
-    }
-    // Try POST on same mirror
-    try{
-      const r=await fetch(mirror,{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'data='+encoded
-      });
-      if(r.ok){
-        const d=await r.json();
-        console.log(`Overpass POST OK from ${mirror}, elements:`,d.elements?.length);
-        return d.elements||[];
-      }
-    }catch(e){
-      console.warn(`Overpass POST failed on ${mirror}:`,e.message);
-    }
-  }
-  console.error('All Overpass mirrors failed');
-  return[];
-}
-
+// Use Google Places API for transit stops — reliable CORS, accurate data
 async function fetchStopsNear(lat,lng){
-  const d=0.018;
-  const bbox=`${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
-  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
-  return overpassQuery(q);
+  const types=['bus_station','transit_station','subway_station','train_station'];
+  const seen=new Set();
+  const stops=[];
+  for(const type of types){
+    try{
+      const url=`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=1200&type=${type}&key=${GOOGLE_KEY}`;
+      const r=await fetch(url);
+      if(!r.ok) continue;
+      const d=await r.json();
+      if(d.status!=='OK'&&d.status!=='ZERO_RESULTS'){
+        console.warn('Places API:',d.status,d.error_message||'');
+        continue;
+      }
+      for(const p of(d.results||[])){
+        if(seen.has(p.place_id)) continue;
+        seen.add(p.place_id);
+        // Map Google types to our stop types
+        const t=p.types||[];
+        let stopType='bus';
+        if(t.includes('subway_station')||t.includes('train_station')) stopType='train';
+        else if(t.includes('transit_station')&&p.name&&p.name.toLowerCase().includes('luas')) stopType='luas';
+        stops.push({
+          id:p.place_id,
+          lat:p.geometry.location.lat,
+          lon:p.geometry.location.lng,
+          tags:{name:p.name},
+          _type:stopType
+        });
+      }
+    }catch(e){console.warn('Places fetch failed:',e.message);}
+  }
+  console.log(`Google Places: ${stops.length} stops near ${lat.toFixed(3)},${lng.toFixed(3)}`);
+  return stops;
 }
 
 async function fetchRoute(fromLat,fromLng,toLat,toLng){
@@ -665,12 +660,10 @@ async function fetchRoute(fromLat,fromLng,toLat,toLng){
   }catch(e){console.warn('Route fetch failed:',e);}
   return null;
 }
-async function fetchRoutesForStop(stopId){
-  try{
-    const q=`[out:json][timeout:10];node(${stopId});rel(bn)["route"~"bus|train|tram|light_rail"];out tags;`;
-    const els=await overpassQuery(q);
-    return els.map(e=>e.tags&&(e.tags.ref||e.tags.name)||'').filter(Boolean).slice(0,6);
-  }catch(e){return[];}
+async function fetchRoutesForStop(placeId){
+  // Google Places Details gives us the stop name — route numbers not available via Places
+  // Return empty so hover tooltip just shows stop name + distance
+  return [];
 }
 
 function clearHoverRoute(){
@@ -753,7 +746,7 @@ async function drawTransportOverlay(){
         if(seen.has(stop.id)) return;
         seen.add(stop.id);
         const tags=stop.tags||{};
-        const type=stopType(tags);
+        const type=stop._type||stopType(tags);
         const name=tags.name||tags['name:en']||'Stop';
         const m=L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
         attachStopHoverWithRoutes(m,stop,type,name);
