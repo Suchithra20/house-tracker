@@ -744,28 +744,60 @@ async function drawTransportOverlay(){
   }).addTo(map);
   transportLines.push(am);
 
-  const locs=[...houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng})),{lat:ARISTA.lat,lng:ARISTA.lng}];
-  const seen=new Set();
-  let shown=0;
+  // First get stops near Arista — these are the "destination" stops
+  const aristaStops = await fetchStopsNear(ARISTA.lat, ARISTA.lng);
+  console.log('Stops near Arista:', aristaStops.length);
 
-  for(const loc of locs){
+  // For each property, get nearby stops and check if they share a route with an Arista stop
+  // Practical filter: road distance to Arista under 20km (rules out distant stops)
+  // and stop must be on the same side of the city (bearing check)
+  const MAX_ROAD_KM = 20;
+  const located = houses.filter(h=>h.lat);
+  const seen = new Set();
+  let shown = 0;
+
+  for(const h of located){
     try{
-      const stops=await fetchStopsNear(loc.lat,loc.lng);
-      console.log(`Got ${stops.length} stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}`);
-      stops.forEach(stop=>{
+      const stops = await fetchStopsNear(h.lat, h.lng);
+      console.log('Stops near property:', stops.length);
+
+      // Filter: only stops where straight-line distance to Arista < MAX_ROAD_KM
+      // and stop is not already past Arista in the wrong direction
+      const filtered = stops.filter(stop=>{
+        const distKm = map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng]) / 1000;
+        return distKm < MAX_ROAD_KM;
+      });
+
+      console.log('Filtered stops (within',MAX_ROAD_KM,'km of Arista):', filtered.length);
+
+      filtered.forEach(stop=>{
         if(seen.has(stop.id)) return;
         seen.add(stop.id);
-        const tags=stop.tags||{};
-        const type=stop._type||stopType(tags);
-        const name=tags.name||tags['name:en']||'Stop';
-        const m=L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
+        const tags = stop.tags||{};
+        const type = stop._type||stopType(tags);
+        const name = tags.name||tags['name:en']||'Stop';
+        const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
         attachStopHoverWithRoutes(m,stop,type,name);
         transportLines.push(m);
         shown++;
       });
     }catch(e){console.error('Stop fetch error:',e);}
   }
-  syncStatus('ok',`${shown} stops loaded — hover for route to Arista`);
+
+  // Also show stops near Arista itself
+  aristaStops.forEach(stop=>{
+    if(seen.has(stop.id)) return;
+    seen.add(stop.id);
+    const tags = stop.tags||{};
+    const type = stop._type||stopType(tags);
+    const name = tags.name||tags['name:en']||'Stop';
+    const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
+    attachStopHoverWithRoutes(m,stop,type,name);
+    transportLines.push(m);
+    shown++;
+  });
+
+  syncStatus('ok', shown+' stops — hover to see route to Arista');
 }
 
 // ---- Boot ----
