@@ -625,7 +625,35 @@ function stopType(tags){
 // REAL FIX: use Leaflet + OSM tiles already loaded, fetch via a public proxy
 
 // Known routes serving IFSC/Georges Dock/Arista area
-const ARISTA_ROUTES = new Set(['39','39A','39B','39C','39D','70','70D','70X','145','747','151','152','49','54A','77A','77X','27','27A','27B','27X','130','140','142','143','120','1','7','7A','7B','2','3','3A','Red','Luas Red','DART','Enterprise','G1','G2','G3','G4','C1','C2','C3','C4','D1','D2','F1','F2','N1','N2','N4','N6','N7','N8','X1','X2']);
+const ARISTA_ROUTES = new Set([
+  // Dublin Bus routes through city centre / quays / IFSC
+  '1','2','3','3A','7','7A','7B','7D',
+  '9','13','14','14A','15','15A','15B','15D',
+  '25','25A','25B','25D','25X',
+  '26','27','27A','27B','27X',
+  '37','38','38A','38B','38C','38D',
+  '39','39A','39B','39C','39D','39X',
+  '40','40A','40B','40D','41','41A','41B','41C','41X',
+  '46A','49','51D','51X','53','54A','56A',
+  '65','65B','66','66A','66B','66X',
+  '67','67X','68','68A','69','69X',
+  '70','70D','70X','77A','77X',
+  '84','84A','84X','102','104','111','114','116','118',
+  '120','123','130','140','142','143','145','150','151','152',
+  '161','220','236','238','239','270','747',
+  // Go-Ahead Ireland
+  'G1','G2','G3','G4','G5',
+  // BusConnects orbital/spine
+  'C1','C2','C3','C4','D1','D2','F1','F2','H1','H2','H3',
+  'L52','L53','L54','L56','L57','L58',
+  'N1','N2','N4','N6','N7','N8',
+  'X1','X2','X3',
+  // Luas Red Line (stops near Arista: Mayor Square, Georges Dock, The Point)
+  'Red','Luas Red','Luas',
+  // Irish Rail / DART / Commuter
+  'DART','Commuter','Enterprise','Northern Commuter','Southern Commuter',
+  'Maynooth Line','Hazelhatch Line','Kildare Line',
+]);
 
 
 
@@ -655,7 +683,23 @@ async function fetchStopsNear(lat,lng,radiusM=2000){
   return [];
 }
 
-async function getStopRouteRefs(stopId){ return []; }
+async function getStopRouteRefs(stopId){
+  const q='[out:json][timeout:8];node('+stopId+');rel(bn)["route"~"bus|train|tram"];out tags;';
+  const base='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
+  const proxies=[
+    'https://corsproxy.io/?'+encodeURIComponent(base),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
+  ];
+  for(const url of proxies){
+    try{
+      const r=await fetch(url);
+      if(!r.ok) continue;
+      const d=JSON.parse(await r.text());
+      return (d.elements||[]).map(e=>e.tags&&(e.tags.ref||e.tags.name)||'').filter(Boolean);
+    }catch(e){}
+  }
+  return[];
+}
 async function fetchStopsWithRoutes(lat,lng,radiusM=2000){
   const stops = await fetchStopsNear(lat,lng,radiusM);
   return {stops, stopRoutes:{}};
@@ -725,7 +769,12 @@ function attachStopHoverWithRoutes(marker,stop,type,name,preloadedRoutes){
         hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);
       }
 
-      const routeStr=routes.length?routes.join(', '):'No direct route to Arista';
+      // Show routes that serve Arista, or all routes if none matched
+      const allRefs = await getStopRouteRefs(stop.id);
+      const aristaRefs = allRefs.filter(r=>ARISTA_ROUTES.has(r));
+      const routeStr = aristaRefs.length ? aristaRefs.join(', ') :
+                       allRefs.length ? allRefs.join(', ')+' (check connections)' :
+                       'Loading…';
       marker.unbindTooltip();
       marker.bindTooltip(
         `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none"><b>${STOP_ICONS[type]} ${routeStr}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
