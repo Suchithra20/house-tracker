@@ -629,70 +629,46 @@ const ARISTA_ROUTES = new Set(['39','39A','39B','39C','39D','70','70D','70X','14
 
 async function overpassGet(q){
   const base='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
-  const proxies=[
+  const urls=[
     'https://corsproxy.io/?'+encodeURIComponent(base),
     'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
   ];
-  for(const url of proxies){
+  for(const url of urls){
     try{
-      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      const r=await fetch(url,{headers:{'Accept':'application/json'},signal:AbortSignal.timeout(8000)});
       if(!r.ok) continue;
       const d=JSON.parse(await r.text());
       if(d.elements!==undefined) return d.elements;
-    }catch(e){ console.warn('Proxy failed:',e.message); }
+    }catch(e){ console.warn('Overpass proxy failed:',e.message); }
   }
   return null;
 }
 
-// Fetch stops near a location AND their route refs in ONE query
-async function fetchStopsWithRoutes(lat,lng,radiusM=2000){
-  const d=Math.min((radiusM/111000)*1.2,0.022);
+// Simple stop fetch — just nodes, no relations (fast + reliable)
+async function fetchStopsNear(lat,lng,radiusM=2000){
+  const d=Math.min((radiusM/111000)*1.3,0.022);
   const bbox=`${lat-d},${lng-d},${lat+d},${lng+d}`;
-  // Get stops + all route relations through those stops in one call
-  const q=`[out:json][timeout:25];
-node["highway"="bus_stop"](${bbox})->.stops;
-node["railway"~"station|tram_stop"](${bbox})->.stops;
-rel(bn.stops)["route"~"bus|train|tram|light_rail"]->.routes;
-(.stops;.routes;);
-out body;`;
-
-  const els = await overpassGet(q);
-  if(!els) return {stops:[], stopRoutes:{}};
-
-  const stops=[], stopRoutes={};
-  const routeRefs={}; // rel id -> ref
-
-  // First pass: index route refs
-  els.filter(e=>e.type==='relation').forEach(r=>{
-    routeRefs[r.id]=r.tags?.ref||r.tags?.name||'';
-  });
-
-  // Second pass: build stop -> routes map using relation members
-  els.filter(e=>e.type==='relation').forEach(r=>{
-    const ref=routeRefs[r.id];
-    if(!ref) return;
-    (r.members||[]).filter(m=>m.type==='node').forEach(m=>{
-      if(!stopRoutes[m.ref]) stopRoutes[m.ref]=[];
-      if(!stopRoutes[m.ref].includes(ref)) stopRoutes[m.ref].push(ref);
-    });
-  });
-
-  // Third pass: collect stops
-  els.filter(e=>e.type==='node'&&(e.tags?.highway==='bus_stop'||e.tags?.railway)).forEach(s=>{
-    stops.push({
-      id:s.id, lat:s.lat, lon:s.lon, tags:s.tags||{},
-      _type:s.tags?.railway==='station'?'train':s.tags?.railway==='tram_stop'?'luas':'bus'
-    });
-  });
-
-  console.log(`Batch query: ${stops.length} stops, ${Object.keys(routeRefs).length} routes`);
-  return {stops, stopRoutes};
+  const q=`[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["railway"~"station|tram_stop"](${bbox}););out body;`;
+  const els=await overpassGet(q);
+  if(!els){ console.warn('Stop fetch returned null'); return[]; }
+  console.log(`${els.length} stops near ${lat.toFixed(3)},${lng.toFixed(3)}`);
+  return els.map(s=>({
+    id:s.id, lat:s.lat, lon:s.lon, tags:s.tags||{},
+    _type:s.tags?.railway==='station'?'train':s.tags?.railway==='tram_stop'?'luas':'bus'
+  }));
 }
 
-// Kept for compat
-async function fetchStopsNear(lat,lng,radiusM=2000){
-  const {stops}=await fetchStopsWithRoutes(lat,lng,radiusM);
-  return stops;
+// Get route refs for a stop — simple query, just relations for ONE stop
+async function getStopRouteRefs(stopId){
+  const q=`[out:json][timeout:8];node(${stopId});rel(bn)["route"~"bus|train|tram"];out tags;`;
+  const els=await overpassGet(q);
+  if(!els) return[];
+  return els.map(e=>e.tags?.ref||e.tags?.name||'').filter(Boolean);
+}
+
+async function fetchStopsWithRoutes(lat,lng,radiusM=2000){
+  const stops=await fetchStopsNear(lat,lng,radiusM);
+  return {stops, stopRoutes:{}};
 }
 
 
@@ -745,12 +721,12 @@ function attachStopHoverWithRoutes(marker,stop,type,name,preloadedRoutes){
         {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
       ).openTooltip();
 
-      // Fetch road route (routes already known from filter step)
-      const routes = preloadedRoutes||[];
-      const [_, coords] = await Promise.all([
-        Promise.resolve(routes),
+      // Fetch route refs + road route in parallel on hover
+      const [routeRefs, coords] = await Promise.all([
+        preloadedRoutes&&preloadedRoutes.length ? Promise.resolve(preloadedRoutes) : getStopRouteRefs(stop.id),
         fetchRoute(stop.lat,stop.lon,ARISTA.lat,ARISTA.lng)
       ]);
+      const routes = (routeRefs||[]).filter(r=>ARISTA_ROUTES.has(r));
 
       if(activeStopMarker!==marker) return;
 
@@ -758,7 +734,7 @@ function attachStopHoverWithRoutes(marker,stop,type,name,preloadedRoutes){
         hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);
       }
 
-      const routeStr=routes.length?routes.join(', '):'No route data';
+      const routeStr=routes.length?routes.join(', '):'No direct route to Arista';
       marker.unbindTooltip();
       marker.bindTooltip(
         `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none"><b>${STOP_ICONS[type]} ${routeStr}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
@@ -818,12 +794,10 @@ async function drawTransportOverlay(){
       const {stops, stopRoutes} = await fetchStopsWithRoutes(h.lat, h.lng, RADIUS_M);
       loader.remove();
 
-      // Filter: only stops where at least one route is in ARISTA_ROUTES
-      const filtered = stops.filter(s => {
-        const refs = stopRoutes[s.id]||[];
-        return refs.some(r => ARISTA_ROUTES.has(r));
-      });
-      console.log(h.address, filtered.length+'/'+stops.length, 'stops on Arista routes');
+      // Show all stops within 2km — route filtering happens on hover
+      // (fetching per-stop routes in bulk is too slow/unreliable)
+      const filtered = stops;
+      console.log(h.address, filtered.length, 'stops within 2km');
 
       let count = 0;
       filtered.forEach(stop => {
@@ -832,9 +806,8 @@ async function drawTransportOverlay(){
         const tags = stop.tags||{};
         const type = stop._type||stopType(tags);
         const name = tags.name||tags['name:en']||'Stop';
-        const refs = (stopRoutes[stop.id]||[]).filter(r=>ARISTA_ROUTES.has(r));
         const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
-        attachStopHoverWithRoutes(m,stop,type,name,refs);
+        attachStopHoverWithRoutes(m,stop,type,name,[]);
         transportLines.push(m);
         count++; totalShown++;
       });
