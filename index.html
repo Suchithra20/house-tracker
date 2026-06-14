@@ -733,9 +733,29 @@ function attachStopHoverWithRoutes(marker,stop,type,name){
   }));
 }
 
+// Per-property loading spinner on map
+function makeLoadingMarker(lat, lng, label) {
+  const m = L.marker([lat, lng], {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:4px 9px;font-size:11px;color:#888;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.15);display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border:2px solid #ccc;border-top-color:#378ADD;border-radius:50%;animation:spin .7s linear infinite"></span>${label}</div>`,
+      iconAnchor: [60, 12]
+    }),
+    zIndexOffset: 500
+  }).addTo(map);
+  return m;
+}
+
 async function drawTransportOverlay(){
-  console.log('drawTransportOverlay: houses with lat=',houses.filter(h=>h.lat).length);
   syncStatus('saving','Loading stops…');
+
+  // Add spin keyframe once
+  if(!document.getElementById('spin-style')){
+    const s=document.createElement('style');
+    s.id='spin-style';
+    s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
 
   // Arista marker
   const am=L.marker([ARISTA.lat,ARISTA.lng],{
@@ -744,33 +764,29 @@ async function drawTransportOverlay(){
   }).addTo(map);
   transportLines.push(am);
 
-  // First get stops near Arista — these are the "destination" stops
-  const aristaStops = await fetchStopsNear(ARISTA.lat, ARISTA.lng);
-  console.log('Stops near Arista:', aristaStops.length);
-
-  // For each property, get nearby stops and check if they share a route with an Arista stop
-  // Practical filter: road distance to Arista under 20km (rules out distant stops)
-  // and stop must be on the same side of the city (bearing check)
-  const MAX_ROAD_KM = 20;
+  const RADIUS_M = 2000; // 2km radius
+  const MAX_ARISTA_KM = 20; // only stops within 20km of Arista
   const located = houses.filter(h=>h.lat);
   const seen = new Set();
-  let shown = 0;
+  let totalShown = 0;
 
-  for(const h of located){
-    try{
-      const stops = await fetchStopsNear(h.lat, h.lng);
-      console.log('Stops near property:', stops.length);
+  // Load each property independently — show spinner, then stops
+  const promises = located.map(async h => {
+    // Show per-property loading indicator at property location
+    const loader = makeLoadingMarker(h.lat, h.lng, 'Loading stops…');
+    transportLines.push(loader);
 
-      // Filter: only stops where straight-line distance to Arista < MAX_ROAD_KM
-      // and stop is not already past Arista in the wrong direction
-      const filtered = stops.filter(stop=>{
-        const distKm = map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng]) / 1000;
-        return distKm < MAX_ROAD_KM;
-      });
+    try {
+      const stops = await fetchStopsNear(h.lat, h.lng, RADIUS_M);
+      loader.remove();
 
-      console.log('Filtered stops (within',MAX_ROAD_KM,'km of Arista):', filtered.length);
+      // Filter: within 20km of Arista (reasonable commute)
+      const filtered = stops.filter(s =>
+        map.distance([s.lat,s.lon],[ARISTA.lat,ARISTA.lng]) / 1000 < MAX_ARISTA_KM
+      );
 
-      filtered.forEach(stop=>{
+      let count = 0;
+      filtered.forEach(stop => {
         if(seen.has(stop.id)) return;
         seen.add(stop.id);
         const tags = stop.tags||{};
@@ -779,25 +795,17 @@ async function drawTransportOverlay(){
         const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
         attachStopHoverWithRoutes(m,stop,type,name);
         transportLines.push(m);
-        shown++;
+        count++; totalShown++;
       });
-    }catch(e){console.error('Stop fetch error:',e);}
-  }
-
-  // Also show stops near Arista itself
-  aristaStops.forEach(stop=>{
-    if(seen.has(stop.id)) return;
-    seen.add(stop.id);
-    const tags = stop.tags||{};
-    const type = stop._type||stopType(tags);
-    const name = tags.name||tags['name:en']||'Stop';
-    const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
-    attachStopHoverWithRoutes(m,stop,type,name);
-    transportLines.push(m);
-    shown++;
+      console.log(h.address, '→', count, 'stops');
+    } catch(e) {
+      loader.remove();
+      console.error('Stop fetch failed for', h.address, e);
+    }
   });
 
-  syncStatus('ok', shown+' stops — hover to see route to Arista');
+  await Promise.all(promises);
+  syncStatus('ok', totalShown + ' stops within 2km — hover for route to Arista');
 }
 
 // ---- Boot ----
