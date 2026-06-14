@@ -520,6 +520,10 @@ function clearOverlays(){
   transportLines.forEach(l=>{try{l.remove();}catch(e){}});transportLines=[];
   if(hoverRouteLayer){try{hoverRouteLayer.remove();}catch(e){}hoverRouteLayer=null;}
   if(greenLayer){try{map.removeLayer(greenLayer);}catch(e){}greenLayer=null;}
+  // Remove any open transport popups
+  document.querySelectorAll('[id^="tp-"]').forEach(el=>el.remove());
+  const rm = document.getElementById('route-modal');
+  if(rm) rm.remove();
 }
 
 // Floor area overlay
@@ -749,15 +753,38 @@ async function drawTransportOverlay() {
     // Hover: show fastest route with "See all routes" button
     const bestLines = result.routes.length ? result.routes.join(' → ') : 'Transit';
     const walkMin = result._allOptions?.[0]?.walkSecs ? Math.round(result._allOptions[0].walkSecs/60)+'min walk' : '';
-    badge.bindTooltip(
-      `<div style="font-size:12px;line-height:1.8;min-width:180px">
-        <b style="font-size:13px">🚌 ${result.mins} min to Arista</b><br>
-        <span style="color:#555">${bestLines}</span><br>
-        ${walkMin ? '<span style="color:#999;font-size:11px">🚶 '+walkMin+'</span><br>' : ''}
-        <button onclick="showAllRoutes('${h.id}')" style="margin-top:4px;font-size:11px;padding:3px 10px;border:1px solid #ddd;border-radius:5px;background:#f5f5f5;cursor:pointer;width:100%">See all routes ↓</button>
-      </div>`,
-      {direction:'top', opacity:1, offset:[0,-8], permanent:false, interactive:true}
-    );
+    // Use a custom div popup that stays open when moused into
+    const popupId = 'tp-'+h.id;
+    badge.on('mouseover', function(){
+      // Clear any pending close timer
+      if(this._closeTimer){ clearTimeout(this._closeTimer); this._closeTimer=null; }
+      // Show popup if not already visible
+      if(document.getElementById(popupId)) return;
+      const el = this.getElement();
+      if(!el) return;
+      const rect = el.getBoundingClientRect();
+      const popup = document.createElement('div');
+      popup.id = popupId;
+      popup.style.cssText = 'position:fixed;z-index:9000;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.2);padding:12px 14px;font-size:12px;line-height:1.8;min-width:190px;pointer-events:all';
+      popup.style.left = rect.left+'px';
+      popup.style.top = (rect.top - 10)+'px';
+      popup.style.transform = 'translateY(-100%)';
+      popup.innerHTML =
+        '<b style="font-size:13px">🚌 '+result.mins+' min to Arista</b><br>'+
+        '<span style="color:#555">'+bestLines+'</span><br>'+
+        (walkMin?'<span style="color:#999;font-size:11px">🚶 '+walkMin+'</span><br>':'')+
+        '<button onclick="showAllRoutes(''+h.id+'')" style="margin-top:6px;font-size:11px;padding:4px 10px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer;width:100%">See all routes ↓</button>';
+      document.body.appendChild(popup);
+      // Keep open while mouse is in popup
+      popup.addEventListener('mouseenter', ()=>{ if(badge._closeTimer){clearTimeout(badge._closeTimer);badge._closeTimer=null;} });
+      popup.addEventListener('mouseleave', ()=>{ badge._closeTimer=setTimeout(()=>{ popup.remove(); },150); });
+    });
+    badge.on('mouseout', function(){
+      this._closeTimer = setTimeout(()=>{
+        const p = document.getElementById(popupId);
+        if(p) p.remove();
+      }, 200);
+    });
     transportLines.push(badge);
   });
 
