@@ -669,7 +669,6 @@ async function fetchRoute(fromLat,fromLng,toLat,toLng){
     if(d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
   }catch(e){console.warn('Route failed:',e.message);}
   return null;
-});
 }
 async function fetchRoutesForStop(placeId){
   // Google Places Details gives us the stop name — route numbers not available via Places
