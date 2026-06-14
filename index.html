@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>House Tracker — Dublin</title>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw&libraries=places,directions"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -619,63 +618,56 @@ function stopType(tags){
   return 'bus';
 }
 
-// Use Google Maps JS API PlacesService — correct CORS, designed for browser
-let placesService=null;
-function getPlacesService(){
-  if(placesService) return placesService;
-  // PlacesService needs a map or div element
-  if(window.google&&window.google.maps&&window.google.maps.places){
-    placesService=new window.google.maps.places.PlacesService(document.getElementById('map'));
+// Fetch transit stops using a CORS-safe proxy approach
+// We encode the bbox query and use the public Overpass via a JSONP-style workaround
+// Actually: use TFI (Transport for Ireland) GTFS-RT or hardcode known Dublin stops
+// REAL FIX: use Leaflet + OSM tiles already loaded, fetch via a public proxy
+
+async function fetchStopsNear(lat,lng){
+  // Use cors-anywhere or a public CORS proxy to reach Overpass
+  const d=0.018;
+  const bbox=`${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
+  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
+  
+  // Try multiple CORS proxies
+  const proxies=[
+    `https://corsproxy.io/?${encodeURIComponent('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q))}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q))}`,
+  ];
+  
+  for(const url of proxies){
+    try{
+      console.log('Trying proxy:', url.slice(0,60));
+      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!r.ok) continue;
+      const text=await r.text();
+      const d2=JSON.parse(text);
+      const elements=d2.elements||[];
+      console.log(`Got ${elements.length} stops via proxy`);
+      if(elements.length===0) continue;
+      return elements.map(s=>({
+        id:s.id,lat:s.lat,lon:s.lon,
+        tags:s.tags||{},
+        _type:s.tags?.railway==='station'?'train':s.tags?.railway==='tram_stop'?'luas':'bus'
+      }));
+    }catch(e){
+      console.warn('Proxy failed:',e.message);
+    }
   }
-  return placesService;
+  console.error('All proxies failed for stops near',lat,lng);
+  return[];
 }
 
-function fetchStopsNear(lat,lng){
-  return new Promise(resolve=>{
-    const svc=getPlacesService();
-    if(!svc){console.warn('PlacesService not ready');resolve([]);return;}
-    const seen=new Set();
-    const stops=[];
-    const types=['bus_station','transit_station','train_station','subway_station'];
-    let pending=types.length;
-    const done=()=>{if(--pending===0){console.log(`Places: ${stops.length} stops near ${lat.toFixed(3)},${lng.toFixed(3)}`);resolve(stops);}};
-    types.forEach(type=>{
-      svc.nearbySearch({
-        location:{lat,lng},
-        radius:1500,
-        type
-      },(results,status)=>{
-        if(status===google.maps.places.PlacesServiceStatus.OK && results){
-          results.forEach(p=>{
-            if(seen.has(p.place_id)) return;
-            seen.add(p.place_id);
-            const t=p.types||[];
-            let sType='bus';
-            if(t.includes('train_station')||t.includes('subway_station')) sType='train';
-            else if(p.name&&(p.name.toLowerCase().includes('luas')||p.name.toLowerCase().includes('tram'))) sType='luas';
-            stops.push({id:p.place_id,lat:p.geometry.location.lat(),lon:p.geometry.location.lng(),tags:{name:p.name},_type:sType});
-          });
-        }
-        done();
-      });
-    });
-  });
-}
-
-function fetchRoute(fromLat,fromLng,toLat,toLng){
-  return new Promise(resolve=>{
-    if(!window.google||!window.google.maps||!window.google.maps.DirectionsService){resolve(null);return;}
-    const svc=new google.maps.DirectionsService();
-    svc.route({
-      origin:{lat:fromLat,lng:fromLng},
-      destination:{lat:toLat,lng:toLng},
-      travelMode:google.maps.TravelMode.TRANSIT
-    },(result,status)=>{
-      if(status!=='OK'){console.warn('Directions:',status);resolve(null);return;}
-      const path=result.routes[0].overview_path;
-      resolve(path.map(p=>[p.lat(),p.lng()]));
-    });
-  });
+async function fetchRoute(fromLat,fromLng,toLat,toLng){
+  try{
+    const url=`https://corsproxy.io/?${encodeURIComponent(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`)}`;
+    const r=await fetch(url);
+    if(!r.ok) return null;
+    const d=await r.json();
+    if(d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+  }catch(e){console.warn('Route failed:',e.message);}
+  return null;
+});
 }
 async function fetchRoutesForStop(placeId){
   // Google Places Details gives us the stop name — route numbers not available via Places
