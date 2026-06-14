@@ -623,41 +623,48 @@ function stopType(tags){
 // Actually: use TFI (Transport for Ireland) GTFS-RT or hardcode known Dublin stops
 // REAL FIX: use Leaflet + OSM tiles already loaded, fetch via a public proxy
 
-async function fetchStopsNear(lat,lng){
-  // Use cors-anywhere or a public CORS proxy to reach Overpass
-  const d=0.018;
-  const bbox=`${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
-  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
-  
-  // Try multiple CORS proxies
+async function overpassGet(q){
   const base='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
   const proxies=[
     'https://corsproxy.io/?'+encodeURIComponent(base),
     'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
   ];
-  
   for(const url of proxies){
     try{
-      console.log('Trying proxy:', url.slice(0,60));
       const r=await fetch(url,{headers:{'Accept':'application/json'}});
       if(!r.ok) continue;
-      const text=await r.text();
-      const d2=JSON.parse(text);
-      const elements=d2.elements||[];
-      console.log(`Got ${elements.length} stops via proxy`);
-      if(elements.length===0) continue;
-      return elements.map(s=>({
-        id:s.id,lat:s.lat,lon:s.lon,
-        tags:s.tags||{},
-        _type:s.tags?.railway==='station'?'train':s.tags?.railway==='tram_stop'?'luas':'bus'
-      }));
-    }catch(e){
-      console.warn('Proxy failed:',e.message);
-    }
+      const d=JSON.parse(await r.text());
+      if(d.elements&&d.elements.length>0) return d.elements;
+    }catch(e){}
   }
-  console.error('All proxies failed for stops near',lat,lng);
   return[];
 }
+
+async function fetchStopsNear(lat,lng,radiusM=2000){
+  const d=Math.min((radiusM/111000)*1.2,0.022);
+  const bbox=`${lat-d},${lng-d},${lat+d},${lng+d}`;
+  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
+  const els=await overpassGet(q);
+  return els.map(s=>({
+    id:s.id,lat:s.lat,lon:s.lon,tags:s.tags||{},
+    _type:s.tags?.railway==='station'?'train':s.tags?.railway==='tram_stop'?'luas':'bus'
+  }));
+}
+
+// Check if stop has a route that also stops near Arista — returns route refs
+async function getRoutesToArista(stopId){
+  const aristaBbox=`${ARISTA.lat-0.008},${ARISTA.lng-0.012},${ARISTA.lat+0.008},${ARISTA.lng+0.012}`;
+  // Get routes through this stop that also have nodes near Arista
+  const q=`[out:json][timeout:15];node(${stopId})->.s;rel(bn.s)["route"~"bus|train|tram"]->.routes;(.routes;);out tags;`;
+  const allRoutes=await overpassGet(q);
+  if(!allRoutes.length) return[];
+  // Check which of those routes pass near Arista
+  const q2=`[out:json][timeout:15];node(${stopId})->.s;rel(bn.s)["route"~"bus|train|tram"](bn.s)->.routes;node.routes(${aristaBbox});out 1;`;
+  const aristaNodes=await overpassGet(q2);
+  if(!aristaNodes.length) return[];
+  return allRoutes.map(r=>r.tags?.ref||r.tags?.name||'').filter(Boolean).slice(0,5);
+}
+
 
 async function fetchRoute(fromLat,fromLng,toLat,toLng){
   try{
@@ -686,7 +693,7 @@ function clearHoverRoute(){
   }
 }
 
-function attachStopHoverWithRoutes(marker,stop,type,name){
+function attachStopHoverWithRoutes(marker,stop,type,name,preloadedRoutes){
   marker._stopType=type;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const el=marker.getElement();
@@ -700,16 +707,18 @@ function attachStopHoverWithRoutes(marker,stop,type,name){
 
       const km=(map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
 
-      // Immediate tooltip
+      // Immediate tooltip — show preloaded routes right away if available
+      const initialRouteStr = preloadedRoutes&&preloadedRoutes.length ? preloadedRoutes.join(', ') : '';
       marker.unbindTooltip();
       marker.bindTooltip(
-        `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none"><b>${STOP_ICONS[type]} ${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span><br><i style="color:#bbb;font-size:11px">Loading routes…</i></div>`,
+        `<div style="font-size:12px;line-height:1.8;min-width:150px;pointer-events:none"><b>${STOP_ICONS[type]} ${initialRouteStr||TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span>${initialRouteStr?'':'<br><i style="color:#bbb;font-size:11px">Loading routes…</i>'}</div>`,
         {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
       ).openTooltip();
 
-      // Fetch route numbers and road route in parallel
-      const [routes, coords] = await Promise.all([
-        fetchRoutesForStop(stop.id),
+      // Fetch road route (routes already known from filter step)
+      const routes = preloadedRoutes||[];
+      const [_, coords] = await Promise.all([
+        Promise.resolve(routes),
         fetchRoute(stop.lat,stop.lon,ARISTA.lat,ARISTA.lng)
       ]);
 
@@ -786,18 +795,22 @@ async function drawTransportOverlay(){
       );
 
       let count = 0;
-      filtered.forEach(stop => {
-        if(seen.has(stop.id)) return;
+      // For each stop, verify it has a route that passes near Arista
+      for(const stop of filtered){
+        if(seen.has(stop.id)) continue;
+        const routes = await getRoutesToArista(stop.id);
+        if(routes.length===0) continue; // no route to Arista — skip
         seen.add(stop.id);
         const tags = stop.tags||{};
         const type = stop._type||stopType(tags);
         const name = tags.name||tags['name:en']||'Stop';
         const m = L.marker([stop.lat,stop.lon],{icon:makeStopIcon(type,false),title:name}).addTo(map);
-        attachStopHoverWithRoutes(m,stop,type,name);
+        // Pass route info to hover so it shows immediately
+        attachStopHoverWithRoutes(m,stop,type,name,routes);
         transportLines.push(m);
         count++; totalShown++;
-      });
-      console.log(h.address, '→', count, 'stops');
+      }
+      console.log(h.address, '→', count, 'relevant stops');
     } catch(e) {
       loader.remove();
       console.error('Stop fetch failed for', h.address, e);
