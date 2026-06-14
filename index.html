@@ -629,33 +629,29 @@ const ARISTA_ROUTES = new Set(['39','39A','39B','39C','39D','70','70D','70X','14
 
 
 async function fetchStopsNear(lat,lng,radiusM=2000){
-  const svc = getPlacesService();
-  if(!svc){ console.warn('PlacesService not ready'); return []; }
-  const loc = {lat, lng};
-  // Search for transit stops
-  const [buses, trains] = await Promise.all([
-    nearbySearchPromise(svc,{location:loc, radius:radiusM, type:'bus_station'}),
-    nearbySearchPromise(svc,{location:loc, radius:radiusM, type:'transit_station'}),
-  ]);
-  const seen = new Set();
-  const stops = [];
-  for(const p of [...buses,...trains]){
-    if(seen.has(p.place_id)) continue;
-    seen.add(p.place_id);
-    const t = p.types||[];
-    let _type = 'bus';
-    if(t.includes('train_station')||t.includes('subway_station')) _type='train';
-    else if(p.name?.toLowerCase().includes('luas')||p.name?.toLowerCase().includes('tram')) _type='luas';
-    stops.push({
-      id: p.place_id,
-      lat: p.geometry.location.lat(),
-      lon: p.geometry.location.lng(),
-      tags: {name: p.name},
-      _type
-    });
+  const d = radiusM/111000;
+  const bbox = (lat-d)+','+(lng-d)+','+(lat+d)+','+(lng+d);
+  const q = '[out:json][timeout:15];(node["highway"="bus_stop"]('+bbox+');node["railway"~"station|tram_stop"]('+bbox+'););out body;';
+  const base = 'https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
+  const proxies = [
+    'https://corsproxy.io/?'+encodeURIComponent(base),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
+  ];
+  for(const url of proxies){
+    try{
+      const r = await fetch(url);
+      if(!r.ok){ console.warn('Proxy HTTP',r.status); continue; }
+      const data = JSON.parse(await r.text());
+      const els = data.elements||[];
+      console.log('Stops found:',els.length,'near',lat.toFixed(3),lng.toFixed(3),'via',url.slice(0,30));
+      return els.map(s=>({
+        id:s.id, lat:s.lat, lon:s.lon, tags:s.tags||{},
+        _type:s.tags&&s.tags.railway==='station'?'train':s.tags&&s.tags.railway==='tram_stop'?'luas':'bus'
+      }));
+    }catch(e){ console.warn('Proxy error:',e.message); }
   }
-  console.log(`Places: ${stops.length} stops near ${lat.toFixed(3)},${lng.toFixed(3)}`);
-  return stops;
+  console.error('All proxies failed');
+  return [];
 }
 
 async function getStopRouteRefs(stopId){ return []; }
