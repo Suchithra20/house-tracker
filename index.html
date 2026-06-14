@@ -642,33 +642,52 @@ function makeTransitBadge(minutes, walks) {
   });
 }
 
-async function getTransitTime(lat, lng) {
-  // Use Google Maps Directions API (REST) via corsproxy
+async function getTransitOptions(lat, lng) {
   const origin = lat+','+lng;
   const dest = ARISTA.lat+','+ARISTA.lng;
   const url = 'https://maps.googleapis.com/maps/api/directions/json'
     +'?origin='+encodeURIComponent(origin)
     +'&destination='+encodeURIComponent(dest)
     +'&mode=transit'
+    +'&alternatives=true'
     +'&departure_time=now'
     +'&key=AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
-  
   const proxied = 'https://corsproxy.io/?'+encodeURIComponent(url);
   try {
     const r = await fetch(proxied);
     if(!r.ok) return null;
     const d = await r.json();
     if(d.status !== 'OK' || !d.routes[0]) return null;
-    const leg = d.routes[0].legs[0];
-    const mins = Math.round(leg.duration.value / 60);
-    // Get transit steps for route summary
-    const steps = leg.steps.filter(s=>s.travel_mode==='TRANSIT');
-    const routes = steps.map(s=>s.transit_details?.line?.short_name||s.transit_details?.line?.name||'').filter(Boolean);
-    return { mins, routes, summary: leg.duration.text };
+    // Parse all route alternatives
+    const options = d.routes.map(route => {
+      const leg = route.legs[0];
+      const mins = Math.round(leg.duration.value / 60);
+      const steps = leg.steps.filter(s=>s.travel_mode==='TRANSIT');
+      const lines = steps.map(s=>{
+        const td = s.transit_details;
+        const name = td?.line?.short_name||td?.line?.name||'';
+        const type = td?.line?.vehicle?.type||'';
+        const dep = td?.departure_stop?.name||'';
+        const arr = td?.arrival_stop?.name||'';
+        return {name, type, dep, arr};
+      });
+      const walk = leg.steps.filter(s=>s.travel_mode==='WALKING')
+        .reduce((sum,s)=>sum+s.duration.value,0);
+      return { mins, lines, walkSecs: walk, depTime: leg.departure_time?.text||'' };
+    });
+    return options;
   } catch(e) {
-    console.warn('Transit time failed:', e.message);
+    console.warn('Transit options failed:', e.message);
     return null;
   }
+}
+
+// Keep backward compat
+async function getTransitTime(lat, lng) {
+  const opts = await getTransitOptions(lat, lng);
+  if(!opts||!opts.length) return null;
+  const best = opts[0];
+  return { mins: best.mins, routes: best.lines.map(l=>l.name), summary: best.mins+'min' };
 }
 
 let transitMarkers = [];
@@ -698,8 +717,11 @@ async function drawTransportOverlay() {
     // Check cache
     let result = TRANSIT_CACHE[h.id];
     if(!result) {
-      result = await getTransitTime(h.lat, h.lng);
-      if(result) TRANSIT_CACHE[h.id] = result;
+      const opts = await getTransitOptions(h.lat, h.lng);
+      if(opts && opts.length) {
+        result = { mins: opts[0].mins, routes: opts[0].lines.map(l=>l.name), _allOptions: opts };
+        TRANSIT_CACHE[h.id] = result;
+      }
     }
 
     loadBadge.remove();
@@ -720,14 +742,21 @@ async function drawTransportOverlay() {
       zIndexOffset: 500
     }).addTo(map);
 
-    // Hover on badge: show route breakdown
+    // Store full options on badge for click-to-expand
+    badge._transitOpts = result._allOptions || [];
+    badge._houseAddr = h.address;
+
+    // Hover: show fastest route with "See all routes" button
+    const bestLines = result.routes.length ? result.routes.join(' → ') : 'Transit';
+    const walkMin = result._allOptions?.[0]?.walkSecs ? Math.round(result._allOptions[0].walkSecs/60)+'min walk' : '';
     badge.bindTooltip(
-      `<div style="font-size:12px;line-height:1.7;min-width:160px">
-        <b>${result.mins} min to Arista</b><br>
-        ${result.routes.length ? '🚌 '+result.routes.join(' → ') : 'Transit route'}<br>
-        <span style="color:#999;font-size:11px">via Google Maps</span>
+      `<div style="font-size:12px;line-height:1.8;min-width:180px">
+        <b style="font-size:13px">🚌 ${result.mins} min to Arista</b><br>
+        <span style="color:#555">${bestLines}</span><br>
+        ${walkMin ? '<span style="color:#999;font-size:11px">🚶 '+walkMin+'</span><br>' : ''}
+        <button onclick="showAllRoutes('${h.id}')" style="margin-top:4px;font-size:11px;padding:3px 10px;border:1px solid #ddd;border-radius:5px;background:#f5f5f5;cursor:pointer;width:100%">See all routes ↓</button>
       </div>`,
-      {direction:'top', opacity:1, offset:[0,-8]}
+      {direction:'top', opacity:1, offset:[0,-8], permanent:false, interactive:true}
     );
     transportLines.push(badge);
   });
@@ -741,6 +770,49 @@ async function drawTransportOverlay() {
   syncStatus('ok', 'Transit times loaded — 🟢<30min 🟠<45min 🔴>45min');
 }
 
+
+// All routes modal
+let _routeModalId = null;
+function showAllRoutes(houseId){
+  const h = houses.find(x=>x.id===houseId);
+  const opts = TRANSIT_CACHE[houseId]?._allOptions||[];
+  if(!opts.length) return;
+
+  // Remove existing modal
+  const ex = document.getElementById('route-modal');
+  if(ex) ex.remove();
+
+  const lineHtml = opts.map((opt,i)=>{
+    const steps = opt.lines.map(l=>{
+      const icon = l.type&&l.type.includes('RAIL')?'🚆':l.type&&l.type.includes('TRAM')?'🚊':'🚌';
+      return `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0f0f0;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600">${icon} ${l.name}</span>`;
+    }).join('<span style="color:#999;margin:0 3px">→</span>');
+    const walk = opt.walkSecs ? `<span style="color:#999;font-size:11px"> · 🚶 ${Math.round(opt.walkSecs/60)}min walk</span>` : '';
+    const dep = opt.depTime ? `<span style="color:#999;font-size:11px"> · departs ${opt.depTime}</span>` : '';
+    return `<div style="padding:9px 0;border-bottom:1px solid #f0ede6;display:flex;justify-content:space-between;align-items:center">
+      <div>${steps||'<span style="font-size:11px;color:#999">Walk only</span>'}</div>
+      <div style="text-align:right;flex-shrink:0;margin-left:10px">
+        <b style="font-size:13px">${opt.mins}min</b>${walk}${dep}
+      </div>
+    </div>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'route-modal';
+  modal.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:16px 18px;z-index:9999;width:360px;max-width:90vw;max-height:60vh;overflow-y:auto';
+  modal.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:13px;font-weight:600">Routes to Arista</div>
+        <div style="font-size:11px;color:#888">${h?h.address:''}</div>
+      </div>
+      <button onclick="document.getElementById('route-modal').remove()" style="border:none;background:none;font-size:18px;cursor:pointer;color:#888;line-height:1">×</button>
+    </div>
+    ${lineHtml}
+    <div style="margin-top:10px;font-size:10px;color:#bbb;text-align:center">via Google Maps Directions</div>
+  `;
+  document.body.appendChild(modal);
+}
 
 // ---- Boot ----
 (async()=>{
