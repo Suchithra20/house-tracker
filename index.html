@@ -18,7 +18,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sync-dot.ok{background:#1D9E75}.sync-dot.err{background:#e74c3c}.sync-dot.saving{background:#C8823A}
 
 /* Overlay bar */
-.overlay-bar{display:flex;gap:6px;align-items:center;padding:7px 14px;background:#fff;border-bottom:1px solid #e5e3dc;flex-shrink:0;z-index:20;position:relative}
+.overlay-bar{display:flex;gap:6px;align-items:center;padding:7px 14px;background:#fff;border-bottom:1px solid #e5e3dc;flex-shrink:0;z-index:20;position:relative;flex-wrap:wrap}
 .overlay-bar span{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
 .ovl-btn{font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:20px;background:#fff;color:#555;cursor:pointer;transition:all .15s;user-select:none}
 .ovl-btn:hover{border-color:#999;color:#1a1a1a}
@@ -26,7 +26,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 .main{display:flex;flex:1;overflow:hidden;position:relative}
 #map{flex:1;z-index:1}
-.sidebar{width:270px;background:#fff;border-left:1px solid #e5e3dc;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;z-index:2}
+
+/* Sidebar — two layer panels */
+.sidebar{width:290px;background:#fff;border-left:1px solid #e5e3dc;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;z-index:2;position:relative}
+
+/* Panel 1: list */
+.panel-list{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .25s ease;background:#fff;z-index:1}
+.panel-list.slide-out{transform:translateX(-100%)}
 .sidebar-hdr{padding:9px 13px;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e5e3dc;flex-shrink:0}
 .hlist{overflow-y:auto;flex:1}
 .hcard{padding:10px 13px;border-bottom:1px solid #f0ede6;cursor:pointer;transition:background .1s;position:relative}
@@ -42,60 +48,60 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .thumb{width:38px;height:38px;object-fit:cover;border-radius:6px;flex-shrink:0}
 .empty{padding:18px 13px;font-size:13px;color:#aaa;line-height:1.6}
 
-/* Detail */
-.detail{display:none;position:absolute;inset:0;background:#f5f4f0;overflow-y:auto;z-index:5}
-.detail.open{display:block}
-.detail-inner{max-width:680px;margin:0 auto;padding:18px}
-.back{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#666;cursor:pointer;border:none;background:none;padding:0;margin-bottom:14px}
-.back:hover{color:#1a1a1a}
-.dcard{background:#fff;border-radius:12px;border:1px solid #e5e3dc;padding:18px;margin-bottom:14px}
-.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px}
-.photo-item{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#f0ede6}
+/* Panel 2: detail drawer */
+.panel-detail{position:absolute;inset:0;display:flex;flex-direction:column;background:#f5f4f0;z-index:2;transform:translateX(100%);transition:transform .25s ease;overflow:hidden}
+.panel-detail.slide-in{transform:translateX(0)}
+.detail-hdr{display:flex;align-items:center;gap:8px;padding:10px 13px;background:#fff;border-bottom:1px solid #e5e3dc;flex-shrink:0}
+.back-btn{display:flex;align-items:center;gap:4px;font-size:12px;color:#666;cursor:pointer;border:none;background:none;padding:4px 8px 4px 0;line-height:1}
+.back-btn:hover{color:#1a1a1a}
+.detail-scroll{overflow-y:auto;flex:1;padding:12px}
+.dcard{background:#fff;border-radius:12px;border:1px solid #e5e3dc;padding:16px;margin-bottom:12px}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px}
+.photo-item{position:relative;aspect-ratio:4/3;border-radius:7px;overflow:hidden;background:#f0ede6}
 .photo-item img{width:100%;height:100%;object-fit:cover}
-.photo-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.photo-add{border:2px dashed #ddd;border-radius:8px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#aaa;font-size:12px;gap:4px}
+.photo-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.photo-add{border:2px dashed #ddd;border-radius:7px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#aaa;font-size:11px;gap:3px}
 .photo-add:hover{border-color:#999;color:#666}
-.photo-add span{font-size:20px}
-.edit-field{margin-bottom:10px}
-.edit-field label{font-size:11px;color:#999;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
-.edit-field input,.edit-field select{width:100%;border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#fff}
-.edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
-.view-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
-.dstat{background:#f5f4f0;border-radius:8px;padding:9px 11px}
+.photo-add span{font-size:18px}
+.edit-field{margin-bottom:9px}
+.edit-field label{font-size:10px;color:#999;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.edit-field input,.edit-field select{width:100%;border:1px solid #ddd;border-radius:7px;padding:7px 9px;font-size:12px;font-family:inherit;color:#1a1a1a;background:#fff}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.view-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.dstat{background:#f5f4f0;border-radius:7px;padding:8px 10px}
 .dstat label{font-size:10px;color:#999;display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em}
 .dstat span{font-size:13px;font-weight:600;color:#1a1a1a}
-.section-label{font-size:11px;color:#999;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;margin-top:12px}
-.stars{display:flex;gap:4px;margin-bottom:4px}
-.star{font-size:21px;cursor:pointer;color:#ddd;line-height:1;transition:color .1s}
+.section-label{font-size:10px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;margin-top:11px}
+.stars{display:flex;gap:3px;margin-bottom:4px}
+.star{font-size:20px;cursor:pointer;color:#ddd;line-height:1;transition:color .1s}
 .star.on{color:#C8823A}
-textarea{width:100%;border:1px solid #e0ddd6;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;background:#fff;color:#1a1a1a;resize:vertical;min-height:75px;line-height:1.5;margin-top:5px}
-.dlink{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#378ADD;margin-top:10px;text-decoration:none}
+textarea{width:100%;border:1px solid #e0ddd6;border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a;resize:vertical;min-height:65px;line-height:1.5;margin-top:4px}
+.dlink{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#378ADD;margin-top:8px;text-decoration:none}
 .dlink:hover{text-decoration:underline}
-.dfooter{margin-top:14px;padding-top:12px;border-top:1px solid #f0ede6;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.ss{font-size:12px;padding:5px 9px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
-.btn{padding:6px 13px;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;background:#fff;color:#555;font-family:inherit}
+.dfooter{margin-top:12px;padding-top:10px;border-top:1px solid #f0ede6;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ss{font-size:12px;padding:5px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#1a1a1a;cursor:pointer}
+.btn{padding:5px 11px;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;background:#fff;color:#555;font-family:inherit}
 .btn:hover{background:#f5f4f0}
 .btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500}
 .btn.primary:hover{background:#333}
 .btn.danger{color:#c0392b;border-color:#f5c6c2}
 .btn.danger:hover{background:#fff5f4}
-.dprice-view{font-size:21px;font-weight:700;color:#1a1a1a}
-.daddr-view{font-size:13px;color:#888;margin-top:2px;margin-bottom:14px}
-.dcard-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.dprice-view{font-size:19px;font-weight:700;color:#1a1a1a}
+.daddr-view{font-size:12px;color:#888;margin-top:2px;margin-bottom:12px}
+.dcard-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;gap:8px}
 
 /* Modal */
 .modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:200}
 .modal-wrap.open{display:flex}
 .modal{background:#fff;border-radius:14px;padding:20px;width:350px;box-shadow:0 8px 40px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto}
 .modal h2{font-size:14px;font-weight:600;margin-bottom:14px}
-.field{margin-bottom:10px}
+.field{margin-bottom:9px}
 .field label{font-size:11px;color:#888;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
 .field input{width:100%;border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;color:#1a1a1a}
 .field input:focus{outline:none;border-color:#999}
 .tc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mactions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .hint{font-size:11px;color:#aaa;margin-top:3px}
-.area-tip{background:rgba(55,138,221,.9)!important;color:#fff!important;border:none!important;font-size:11px!important;font-weight:600!important;padding:3px 7px!important;border-radius:4px!important}
 </style>
 </head>
 <body>
@@ -110,27 +116,33 @@ textarea{width:100%;border:1px solid #e0ddd6;border-radius:8px;padding:9px 11px;
   </div>
 </div>
 
-<div class="overlay-bar" id="overlay-bar">
+<div class="overlay-bar">
   <span>Overlay</span>
   <button class="ovl-btn active" id="ovl-none" onclick="setOverlay('none')">None</button>
   <button class="ovl-btn" id="ovl-transport" onclick="setOverlay('transport')">🚌 Transport</button>
   <button class="ovl-btn" id="ovl-area" onclick="setOverlay('area')">⬤ Floor area</button>
+  <button class="ovl-btn" id="ovl-fees" onclick="setOverlay('fees')">💰 Maint. fees</button>
   <button class="ovl-btn" id="ovl-green" onclick="setOverlay('green')">🌿 Green spaces</button>
 </div>
 
-<div class="main" id="main-view">
+<div class="main">
   <div id="map"></div>
   <div class="sidebar">
-    <div class="sidebar-hdr">Properties</div>
-    <div class="hlist" id="hlist"></div>
-    <div class="empty" id="hempty">No properties yet.<br>Add a Daft or MyHome listing to get started.</div>
-  </div>
-</div>
-
-<div class="detail" id="detail-view">
-  <div class="detail-inner">
-    <button class="back" onclick="closeDetail()">← All properties</button>
-    <div id="dcontent"></div>
+    <!-- Panel 1: list -->
+    <div class="panel-list" id="panel-list">
+      <div class="sidebar-hdr">Properties</div>
+      <div class="hlist" id="hlist"></div>
+      <div class="empty" id="hempty">No properties yet.<br>Add a Daft or MyHome listing to get started.</div>
+    </div>
+    <!-- Panel 2: detail drawer -->
+    <div class="panel-detail" id="panel-detail">
+      <div class="detail-hdr">
+        <button class="back-btn" onclick="closeDetail()">← Back</button>
+        <span id="detail-title" style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1"></span>
+        <button class="btn" id="edit-toggle-btn" onclick="toggleEdit()" style="font-size:11px;padding:4px 9px">✏️ Edit</button>
+      </div>
+      <div class="detail-scroll" id="detail-scroll"></div>
+    </div>
   </div>
 </div>
 
@@ -149,6 +161,7 @@ textarea{width:100%;border:1px solid #e0ddd6;border-radius:8px;padding:9px 11px;
       <div class="field"><label>Floor area (m²)</label><input type="number" id="f-area" min="1" placeholder="85"></div>
       <div class="field"><label>BER</label><input type="text" id="f-ber" placeholder="B2"></div>
     </div>
+    <div class="field"><label>Management fees (€/yr)</label><input type="number" id="f-fees" min="0" placeholder="1200"></div>
     <div class="mactions">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn primary" onclick="addHouse()">Add property</button>
@@ -159,19 +172,16 @@ textarea{width:100%;border:1px solid #e0ddd6;border-radius:8px;padding:9px 11px;
 <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
 
 <script>
-// ---- Config ----
-const SUPA_URL = 'https://ptcfdabyiuzgylmjluic.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0Y2ZkYWJ5aXV6Z3lsbWpsdWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMDc5NDEsImV4cCI6MjA5Njg4Mzk0MX0.bdn9GIWpfRzzFPRcqTm-k1DAH-N_QpiLvsveRHtAQw4';
-const HEADERS = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
-const GOOGLE_KEY = 'AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
-const ARISTA = {lat:53.3493, lng:-6.2435};
+const SUPA_URL='https://ptcfdabyiuzgylmjluic.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0Y2ZkYWJ5aXV6Z3lsbWpsdWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMDc5NDEsImV4cCI6MjA5Njg4Mzk0MX0.bdn9GIWpfRzzFPRcqTm-k1DAH-N_QpiLvsveRHtAQw4';
+const HEADERS={'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+const GOOGLE_KEY='AIzaSyDfSRQLf959OZO7t_Wy1Kuf-iwpggOjzqw';
+const ARISTA={lat:53.3493,lng:-6.2435};
+const SC={interested:'#1D9E75',viewing:'#C8823A',offered:'#378ADD',passed:'#9b9b9b'};
+const SL={interested:'Interested',viewing:'Viewing',offered:'Offered',passed:'Passed'};
 
-const SC = {interested:'#1D9E75',viewing:'#C8823A',offered:'#378ADD',passed:'#9b9b9b'};
-const SL = {interested:'Interested',viewing:'Viewing',offered:'Offered',passed:'Passed'};
+let houses=[],markers={},activeId=null,editingId=null;
 
-let houses=[], markers={}, activeId=null, editingId=null;
-
-// ---- Sync indicator ----
 function syncStatus(state,msg){
   document.getElementById('sync-dot').className='sync-dot '+state;
   document.getElementById('sync-label').textContent=msg;
@@ -188,7 +198,7 @@ async function dbLoad(){
     syncStatus('ok','Synced');
   }catch(e){
     console.error('Load failed:',e);
-    try{const bk=JSON.parse(localStorage.getItem('ht_bk')||'[]');if(bk.length){houses=bk;syncStatus('err','Offline — cached data');return;}}catch(e2){}
+    try{const bk=JSON.parse(localStorage.getItem('ht_bk')||'[]');if(bk.length){houses=bk;syncStatus('err','Offline — cached');return;}}catch(e2){}
     syncStatus('err','Load failed');
   }
 }
@@ -210,7 +220,7 @@ const map=L.map('map').setView([53.3498,-6.2603],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
 
 function makeIcon(color){
-  return L.divIcon({className:'',html:`<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:14px;line-height:1">🏠</span></div>`,iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-36]});
+  return L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:13px;line-height:1">🏠</span></div>`,iconSize:[30,30],iconAnchor:[15,30],popupAnchor:[0,-34]});
 }
 function placeMarker(h){
   if(!h.lat) return;
@@ -263,32 +273,42 @@ function render(){
           <div class="hmeta">
             ${h.beds?'<span>'+h.beds+' bed</span>':''}
             ${h.baths?'<span>'+h.baths+' bath</span>':''}
-            ${h.ber?'<span>BER '+h.ber+'</span>':''}
+            ${h.area?'<span>'+h.area+' m²</span>':''}
+            ${h.fees?'<span>€'+h.fees+'/yr</span>':''}
             ${h.gut?'<span style="color:#C8823A">'+'★'.repeat(h.gut)+'</span>':''}
           </div>
         </div>
       </div>
-      <button class="hcard-del" onclick="event.stopPropagation();quickDelete('${h.id}')">✕ Remove</button>
+      <button class="hcard-del" onclick="event.stopPropagation();quickDelete('${h.id}')">✕</button>
     </div>`;
   }).join('');
 }
 
-// ---- Detail ----
+// ---- Detail drawer ----
 function openDetail(id){
-  activeId=id; editingId=null;
+  activeId=id;editingId=null;
+  const h=houses.find(x=>x.id===id);
+  if(!h) return;
+  document.getElementById('detail-title').textContent=h.address||'Property';
+  document.getElementById('edit-toggle-btn').textContent='✏️ Edit';
   renderDetail();
-  document.getElementById('main-view').style.display='none';
-  document.getElementById('overlay-bar').style.display='none';
-  document.getElementById('detail-view').classList.add('open');
+  document.getElementById('panel-list').classList.add('slide-out');
+  document.getElementById('panel-detail').classList.add('slide-in');
   render();
+  // Pan map to property
+  if(h.lat) map.panTo([h.lat,h.lng],{animate:true});
 }
 function closeDetail(){
-  activeId=null; editingId=null;
-  document.getElementById('main-view').style.display='flex';
-  document.getElementById('overlay-bar').style.display='flex';
-  document.getElementById('detail-view').classList.remove('open');
-  setTimeout(()=>map.invalidateSize(),50);
+  activeId=null;editingId=null;
+  document.getElementById('panel-list').classList.remove('slide-out');
+  document.getElementById('panel-detail').classList.remove('slide-in');
   render();
+}
+function toggleEdit(){
+  if(!activeId) return;
+  if(editingId===activeId){editingId=null;}else{editingId=activeId;}
+  document.getElementById('edit-toggle-btn').textContent=editingId?'✕ Cancel':'✏️ Edit';
+  renderDetail();
 }
 
 function renderDetail(){
@@ -298,51 +318,49 @@ function renderDetail(){
   const photos=h.photos||[];
   const photoGrid=`<div class="photo-grid">
     ${photos.map((p,i)=>`<div class="photo-item"><img src="${p}" alt=""><button class="photo-del" onclick="deletePhoto('${h.id}',${i})">×</button></div>`).join('')}
-    <div class="photo-add" onclick="triggerPhotoUpload('${h.id}')"><span>+</span><div>Add photos</div></div>
+    <div class="photo-add" onclick="triggerPhotoUpload('${h.id}')"><span>+</span><div>Photos</div></div>
   </div>`;
 
+  const el=document.getElementById('detail-scroll');
+
   if(editingId===h.id){
-    document.getElementById('dcontent').innerHTML=`<div class="dcard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div style="font-size:14px;font-weight:600">Edit property</div>
-        <button class="btn" onclick="cancelEdit()">Cancel</button>
-      </div>
+    el.innerHTML=`<div class="dcard">
       ${photoGrid}
       <div class="edit-grid">
         <div class="edit-field" style="grid-column:1/-1"><label>Address</label><input id="e-addr" value="${esc(h.address||'')}"></div>
         <div class="edit-field" style="grid-column:1/-1"><label>Listing URL</label><input type="url" id="e-url" value="${esc(h.url||'')}"></div>
-        <div class="edit-field"><label>Price</label><input id="e-price" value="${esc(h.price||'')}"></div>
+        <div class="edit-field"><label>Price (€)</label><input id="e-price" value="${esc(h.price||'')}"></div>
         <div class="edit-field"><label>Eircode</label><input id="e-eircode" value="${esc(h.eircode||'')}" style="text-transform:uppercase"></div>
-        <div class="edit-field"><label>BER</label><input id="e-ber" value="${esc(h.ber||'')}"></div>
         <div class="edit-field"><label>Beds</label><input type="number" id="e-beds" value="${esc(h.beds||'')}"></div>
         <div class="edit-field"><label>Baths</label><input type="number" id="e-baths" value="${esc(h.baths||'')}"></div>
         <div class="edit-field"><label>Floor area (m²)</label><input type="number" id="e-area" value="${esc(h.area||'')}"></div>
+        <div class="edit-field"><label>BER</label><input id="e-ber" value="${esc(h.ber||'')}"></div>
+        <div class="edit-field"><label>Maint. fees (€/yr)</label><input type="number" id="e-fees" value="${esc(h.fees||'')}"></div>
         <div class="edit-field"><label>Status</label>
           <select id="e-status">${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}</select>
         </div>
       </div>
-      <button class="btn primary" onclick="saveEdit('${h.id}')">Save changes</button>
+      <button class="btn primary" style="width:100%;margin-top:8px" onclick="saveEdit('${h.id}')">Save changes</button>
     </div>`;
   }else{
-    document.getElementById('dcontent').innerHTML=`<div class="dcard">
+    el.innerHTML=`<div class="dcard">
       ${photoGrid}
       <div class="dcard-top">
         <div>
           <div class="dprice-view">${h.price?'€'+h.price:'Price TBC'}</div>
           <div class="daddr-view">${h.address||'—'}</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select class="ss" onchange="setStatus('${h.id}',this.value)">${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}</select>
-          <button class="btn" onclick="startEdit('${h.id}')">✏️ Edit</button>
-        </div>
+        <select class="ss" onchange="setStatus('${h.id}',this.value)">${Object.entries(SL).map(([k,v])=>`<option value="${k}"${s===k?' selected':''}>${v}</option>`).join('')}</select>
       </div>
       <div class="view-grid">
         <div class="dstat"><label>Beds</label><span>${h.beds||'—'}</span></div>
         <div class="dstat"><label>Baths</label><span>${h.baths||'—'}</span></div>
+        <div class="dstat"><label>Floor area</label><span>${h.area?h.area+' m²':'—'}</span></div>
         <div class="dstat"><label>BER</label><span>${h.ber||'—'}</span></div>
         <div class="dstat"><label>Eircode</label><span>${h.eircode?h.eircode.slice(0,3)+' '+h.eircode.slice(3):'—'}</span></div>
-        <div class="dstat"><label>Floor area</label><span>${h.area?h.area+' m²':'—'}</span></div>
+        <div class="dstat"><label>Maint. fees</label><span>${h.fees?'€'+h.fees+'/yr':'—'}</span></div>
         <div class="dstat"><label>Source</label><span>${h.source||'—'}</span></div>
+        <div class="dstat"><label>Photos</label><span>${photos.length}</span></div>
       </div>
       <div class="section-label">Gut feeling</div>
       <div class="stars" id="st-${h.id}">${[1,2,3,4,5].map(n=>`<span class="star${(h.gut||0)>=n?' on':''}" onclick="setGut('${h.id}',${n})">★</span>`).join('')}</div>
@@ -350,7 +368,7 @@ function renderDetail(){
       <textarea onchange="setNotes('${h.id}',this.value)" placeholder="Impressions, things to check…">${h.notes||''}</textarea>
       ${h.url?`<a class="dlink" href="${h.url}" target="_blank">↗ View on ${h.source||'listing'}</a>`:''}
       <div class="dfooter">
-        <button class="btn" onclick="relocate('${h.id}')">📍 Re-locate pin</button>
+        <button class="btn" onclick="relocate('${h.id}')">📍 Re-locate</button>
         <button class="btn danger" onclick="removeHouse('${h.id}')">Remove</button>
       </div>
     </div>`;
@@ -358,12 +376,9 @@ function renderDetail(){
 }
 
 function esc(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function startEdit(id){editingId=id;renderDetail();}
-function cancelEdit(){editingId=null;renderDetail();}
 
 async function saveEdit(id){
-  const h=houses.find(x=>x.id===id);
-  if(!h) return;
+  const h=houses.find(x=>x.id===id);if(!h) return;
   const newEircode=document.getElementById('e-eircode').value.trim().toUpperCase().replace(/\s/g,'');
   const addrChanged=document.getElementById('e-addr').value.trim()!==h.address;
   const eircodeChanged=newEircode!==h.eircode;
@@ -372,13 +387,17 @@ async function saveEdit(id){
   h.price=document.getElementById('e-price').value.replace(/[€,\s]/g,'');
   h.eircode=newEircode;
   h.area=document.getElementById('e-area').value;
+  h.fees=document.getElementById('e-fees').value;
   h.ber=document.getElementById('e-ber').value.trim().toUpperCase();
   h.beds=document.getElementById('e-beds').value;
   h.baths=document.getElementById('e-baths').value;
   h.status=document.getElementById('e-status').value;
   if(addrChanged||eircodeChanged){h.lat=null;h.lng=null;}
   await dbUpsert(h);
-  editingId=null;renderDetail();render();
+  editingId=null;
+  document.getElementById('edit-toggle-btn').textContent='✏️ Edit';
+  document.getElementById('detail-title').textContent=h.address||'Property';
+  renderDetail();render();
   if(!h.lat){await geocode(h);}
   placeMarker(h);render();
 }
@@ -387,11 +406,9 @@ async function saveEdit(id){
 let _photoTargetId=null;
 function triggerPhotoUpload(id){_photoTargetId=id;document.getElementById('photo-input').click();}
 function handlePhotos(e){
-  const h=houses.find(x=>x.id===_photoTargetId);
-  if(!h) return;
+  const h=houses.find(x=>x.id===_photoTargetId);if(!h) return;
   if(!h.photos) h.photos=[];
-  const files=Array.from(e.target.files);
-  let done=0;
+  const files=Array.from(e.target.files);let done=0;
   files.forEach(file=>{
     const reader=new FileReader();
     reader.onload=async ev=>{h.photos.push(ev.target.result);done++;if(done===files.length){await dbUpsert(h);renderDetail();render();}};
@@ -400,10 +417,8 @@ function handlePhotos(e){
   e.target.value='';
 }
 async function deletePhoto(id,idx){
-  const h=houses.find(x=>x.id===id);
-  if(!h||!h.photos) return;
-  h.photos.splice(idx,1);
-  await dbUpsert(h);renderDetail();render();
+  const h=houses.find(x=>x.id===id);if(!h||!h.photos) return;
+  h.photos.splice(idx,1);await dbUpsert(h);renderDetail();render();
 }
 
 // ---- House actions ----
@@ -431,7 +446,6 @@ async function setGut(id,val){
   document.querySelectorAll('#st-'+id+' .star').forEach((s,i)=>s.classList.toggle('on',i<val));
 }
 async function setNotes(id,val){const h=houses.find(x=>x.id===id);if(h){h.notes=val;await dbUpsert(h);}}
-
 async function regeocodeAll(){
   if(!confirm('Re-geocode all pins using Google?')) return;
   syncStatus('saving','Re-locating…');
@@ -442,15 +456,15 @@ async function relocate(id){
   const h=houses.find(x=>x.id===id);if(!h) return;
   h.lat=null;h.lng=null;syncStatus('saving','Locating…');
   await geocode(h);
-  if(h.lat){placeMarker(h);map.setView([h.lat,h.lng],16);syncStatus('ok','Pin updated');}
-  else syncStatus('err','Could not locate — check address');
+  if(h.lat){placeMarker(h);map.panTo([h.lat,h.lng]);syncStatus('ok','Pin updated');}
+  else syncStatus('err','Could not locate');
 }
 
 // ---- Modal ----
 function openModal(){document.getElementById('modal').classList.add('open');}
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
-  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-area','f-ber'].forEach(id=>document.getElementById(id).value='');
+  ['f-url','f-addr','f-price','f-beds','f-baths','f-eircode','f-area','f-ber','f-fees'].forEach(id=>document.getElementById(id).value='');
   setTimeout(()=>map.invalidateSize(),200);
 }
 async function addHouse(){
@@ -465,6 +479,7 @@ async function addHouse(){
     baths:document.getElementById('f-baths').value,
     area:document.getElementById('f-area').value,
     ber:document.getElementById('f-ber').value.trim().toUpperCase(),
+    fees:document.getElementById('f-fees').value,
     source,status:'interested',gut:0,notes:'',photos:[]};
   houses.push(h);
   await dbUpsert(h);closeModal();render();
@@ -477,54 +492,86 @@ async function addHouse(){
 // ========== OVERLAYS ==========
 let currentOverlay='none';
 let areaCircles=[];
+let feesCircles=[];
 let transportLines=[];
 let greenLayer=null;
 let hoverRouteLayer=null;
+let activeStopMarker=null;
 
 function setOverlay(type){
-  console.log('setOverlay called:', type);
+  console.log('setOverlay:',type);
   currentOverlay=type;
-  ['none','transport','area','green'].forEach(t=>{
+  ['none','transport','area','fees','green'].forEach(t=>{
     const el=document.getElementById('ovl-'+t);
     if(el) el.classList.toggle('active',t===type);
   });
   clearOverlays();
   if(type==='area') drawAreaOverlay();
+  else if(type==='fees') drawFeesOverlay();
   else if(type==='transport') drawTransportOverlay();
   else if(type==='green') drawGreenOverlay();
 }
 
 function clearOverlays(){
   areaCircles.forEach(c=>{try{c.remove();}catch(e){}});areaCircles=[];
+  feesCircles.forEach(c=>{try{c.remove();}catch(e){}});feesCircles=[];
   transportLines.forEach(l=>{try{l.remove();}catch(e){}});transportLines=[];
   if(hoverRouteLayer){try{hoverRouteLayer.remove();}catch(e){}hoverRouteLayer=null;}
   if(greenLayer){try{map.removeLayer(greenLayer);}catch(e){}greenLayer=null;}
 }
 
-// -- Floor area overlay --
+// Floor area overlay
 function drawAreaOverlay(){
-  console.log('drawAreaOverlay, houses with lat:', houses.filter(h=>h.lat).length);
   const located=houses.filter(h=>h.lat);
-  if(!located.length){syncStatus('ok','No pinned properties');return;}
+  if(!located.length) return;
   const areas=located.map(h=>parseFloat(h.area)||80);
-  const maxArea=Math.max(...areas), minArea=Math.min(...areas);
+  const maxA=Math.max(...areas),minA=Math.min(...areas);
   located.forEach(h=>{
     const sqm=parseFloat(h.area)||80;
-    const radius=150+((sqm-minArea)/(Math.max(maxArea-minArea,1)))*250;
-    const c=L.circle([h.lat,h.lng],{radius,color:'#378ADD',fillColor:'#378ADD',fillOpacity:0.2,weight:2,opacity:0.8}).addTo(map);
-    c.bindTooltip(h.area?`${sqm} m²`:'No area set',{permanent:true,direction:'top',offset:[0,-8]});
+    const radius=120+((sqm-minA)/(Math.max(maxA-minA,1)))*280;
+    const c=L.circle([h.lat,h.lng],{radius,color:'#378ADD',fillColor:'#378ADD',fillOpacity:0.18,weight:2,opacity:0.8}).addTo(map);
+    c.bindTooltip(h.area?`${sqm} m²`:'Area unknown',{permanent:true,direction:'top',offset:[0,-8]});
     c.openTooltip();
     areaCircles.push(c);
   });
-  syncStatus('ok','Floor area overlay active');
+  syncStatus('ok','Floor area overlay');
 }
 
-// -- Green spaces overlay --
+// Maintenance fees overlay
+function drawFeesOverlay(){
+  const located=houses.filter(h=>h.lat);
+  if(!located.length) return;
+  const fees=located.map(h=>parseFloat(h.fees)||0);
+  const maxF=Math.max(...fees)||1;
+  located.forEach(h=>{
+    const fee=parseFloat(h.fees)||0;
+    if(!fee){
+      // No fees — small grey circle
+      const c=L.circle([h.lat,h.lng],{radius:80,color:'#aaa',fillColor:'#aaa',fillOpacity:0.15,weight:1.5,opacity:0.5}).addTo(map);
+      c.bindTooltip('No fees set',{permanent:true,direction:'top',offset:[0,-6]});
+      c.openTooltip();
+      feesCircles.push(c);
+      return;
+    }
+    // Higher fees = larger, more red circle
+    const ratio=fee/maxF;
+    const radius=80+ratio*300;
+    const r=Math.round(180+ratio*75), g=Math.round(100-ratio*80), b=50;
+    const color=`rgb(${r},${g},${b})`;
+    const c=L.circle([h.lat,h.lng],{radius,color,fillColor:color,fillOpacity:0.2,weight:2,opacity:0.8}).addTo(map);
+    c.bindTooltip(`€${fee.toLocaleString()}/yr`,{permanent:true,direction:'top',offset:[0,-8]});
+    c.openTooltip();
+    feesCircles.push(c);
+  });
+  syncStatus('ok','Maintenance fees overlay');
+}
+
+// Green spaces overlay
 async function drawGreenOverlay(){
   const located=houses.filter(h=>h.lat);
   if(!located.length){syncStatus('ok','No pinned properties');return;}
   syncStatus('saving','Loading green spaces…');
-  const lats=located.map(h=>h.lat), lngs=located.map(h=>h.lng);
+  const lats=located.map(h=>h.lat),lngs=located.map(h=>h.lng);
   const pad=0.05;
   const bbox=`${Math.min(...lats)-pad},${Math.min(...lngs)-pad},${Math.max(...lats)+pad},${Math.max(...lngs)+pad}`;
   const q=`[out:json][timeout:25];(way["leisure"="park"](${bbox});way["leisure"="nature_reserve"](${bbox});way["landuse"="grass"](${bbox});way["landuse"="recreation_ground"](${bbox});way["leisure"="garden"](${bbox}););out geom;`;
@@ -547,7 +594,7 @@ async function drawGreenOverlay(){
   }
 }
 
-// -- Transport overlay --
+// Transport overlay
 const STOP_ICONS={bus:'🚌',train:'🚆',luas:'🚊',ferry:'⛴'};
 const STOP_COLORS={bus:'#0057B8',train:'#E8A000',luas:'#C8102E',ferry:'#0099CC'};
 const TYPE_LABELS={bus:'Bus',train:'DART/Rail',luas:'Luas',ferry:'Ferry'};
@@ -555,7 +602,7 @@ const TYPE_LABELS={bus:'Bus',train:'DART/Rail',luas:'Luas',ferry:'Ferry'};
 function makeStopIcon(type,highlight){
   const bg=STOP_COLORS[type]||'#0057B8';
   const sh=highlight?`0 0 0 3px ${bg},0 2px 8px rgba(0,0,0,.4)`:'0 1px 4px rgba(0,0,0,.3)';
-  return L.divIcon({className:'',html:`<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:${sh}">${STOP_ICONS[type]||'🚌'}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+  return L.divIcon({className:'',html:`<div style="width:26px;height:26px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:${sh};transition:box-shadow .15s">${STOP_ICONS[type]||'🚌'}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
 }
 function stopType(tags){
   if(tags.railway==='station') return 'train';
@@ -563,20 +610,24 @@ function stopType(tags){
   if(tags.amenity==='ferry_terminal') return 'ferry';
   return 'bus';
 }
+
 async function fetchStopsNear(lat,lng){
-  const d=0.012;
+  // Larger bbox to catch more stops
+  const d=0.018;
   const bbox=`${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
-  const q=`[out:json][timeout:15];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
+  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox});node["railway"="halt"](${bbox}););out body;`;
   const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
   if(!r.ok) throw new Error('Overpass '+r.status);
-  return(await r.json()).elements||[];
+  const d2=await r.json();
+  return d2.elements||[];
 }
+
 async function fetchRoute(fromLat,fromLng,toLat,toLng){
   try{
     const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
     const d=await r.json();
     if(d.routes&&d.routes[0]) return d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-  }catch(e){}
+  }catch(e){console.warn('Route fetch failed:',e);}
   return null;
 }
 async function fetchRoutesForStop(stopId){
@@ -588,35 +639,67 @@ async function fetchRoutesForStop(stopId){
   }catch(e){return[];}
 }
 
+function clearHoverRoute(){
+  if(hoverRouteLayer){hoverRouteLayer.remove();hoverRouteLayer=null;}
+  if(activeStopMarker){
+    const type=activeStopMarker._stopType;
+    activeStopMarker.setIcon(makeStopIcon(type,false));
+    activeStopMarker.unbindTooltip();
+    activeStopMarker=null;
+  }
+}
+
 function attachStopHover(marker,stop,type,name){
-  // Double rAF ensures element is in DOM
+  marker._stopType=type;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const el=marker.getElement();
-    if(!el){console.warn('No DOM element for',name);return;}
+    if(!el) return;
     el.style.cursor='pointer';
+
     el.addEventListener('mouseenter',async()=>{
+      // Clear any previous hover immediately
+      clearHoverRoute();
+      activeStopMarker=marker;
       marker.setIcon(makeStopIcon(type,true));
+
       const km=(map.distance([stop.lat,stop.lon],[ARISTA.lat,ARISTA.lng])/1000).toFixed(1);
+
+      // Show tooltip immediately
       marker.unbindTooltip();
-      marker.bindTooltip(`<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span><br><i style="color:#bbb;font-size:11px">Loading route…</i></div>`,{permanent:true,direction:'top',opacity:1,offset:[0,-6]}).openTooltip();
+      marker.bindTooltip(
+        `<div style="font-size:12px;line-height:1.7;min-width:130px;pointer-events:none"><b>${TYPE_LABELS[type]}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
+        {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
+      ).openTooltip();
+
+      // Fetch route
       const coords=await fetchRoute(stop.lat,stop.lon,ARISTA.lat,ARISTA.lng);
-      if(coords){if(hoverRouteLayer) hoverRouteLayer.remove();hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);}
+      // Only draw if this stop is still active
+      if(activeStopMarker===marker&&coords){
+        hoverRouteLayer=L.polyline(coords,{color:STOP_COLORS[type]||'#0057B8',weight:5,opacity:0.8}).addTo(map);
+      }
+
+      // Fetch route numbers and update tooltip
       const routes=await fetchRoutesForStop(stop.id);
-      const routeStr=routes.length?routes.join(', '):'';
-      marker.unbindTooltip();
-      marker.bindTooltip(`<div style="font-size:12px;line-height:1.7;min-width:130px"><b>${TYPE_LABELS[type]}${routeStr?' · '+routeStr:''}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,{permanent:true,direction:'top',opacity:1,offset:[0,-6]}).openTooltip();
+      if(activeStopMarker===marker){
+        const routeStr=routes.length?routes.join(', '):'';
+        marker.unbindTooltip();
+        marker.bindTooltip(
+          `<div style="font-size:12px;line-height:1.7;min-width:130px;pointer-events:none"><b>${TYPE_LABELS[type]}${routeStr?' · '+routeStr:''}</b><br>${name}<br><span style="color:#999">${km} km to Arista</span></div>`,
+          {permanent:true,direction:'top',opacity:1,offset:[0,-8]}
+        ).openTooltip();
+      }
     });
+
     el.addEventListener('mouseleave',()=>{
-      marker.setIcon(makeStopIcon(type,false));
-      marker.unbindTooltip();
-      if(hoverRouteLayer){hoverRouteLayer.remove();hoverRouteLayer=null;}
+      clearHoverRoute();
     });
   }));
 }
 
 async function drawTransportOverlay(){
-  console.log('drawTransportOverlay called');
+  console.log('drawTransportOverlay: houses with lat=',houses.filter(h=>h.lat).length);
   syncStatus('saving','Loading stops…');
+
   // Arista marker
   const am=L.marker([ARISTA.lat,ARISTA.lng],{
     icon:L.divIcon({className:'',html:`<div style="background:#1a1a1a;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)">🏢 Arista</div>`,iconAnchor:[36,14]}),
@@ -626,11 +709,12 @@ async function drawTransportOverlay(){
 
   const locs=[...houses.filter(h=>h.lat).map(h=>({lat:h.lat,lng:h.lng})),{lat:ARISTA.lat,lng:ARISTA.lng}];
   const seen=new Set();
+
   for(const loc of locs){
     try{
       const stops=await fetchStopsNear(loc.lat,loc.lng);
-      console.log(`Got ${stops.length} stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}`);
-      stops.slice(0,12).forEach(stop=>{
+      console.log(`Stops near ${loc.lat.toFixed(3)},${loc.lng.toFixed(3)}:`,stops.length);
+      stops.forEach(stop=>{
         if(seen.has(stop.id)) return;
         seen.add(stop.id);
         const tags=stop.tags||{};
@@ -642,15 +726,15 @@ async function drawTransportOverlay(){
       });
     }catch(e){console.error('Stop fetch error:',e);}
   }
-  syncStatus('ok','Hover a stop to see route to Arista');
+  syncStatus('ok','Hover a stop → see route to Arista');
 }
 
 // ---- Boot ----
-const BAD_LAT=53.3498,BAD_LNG=-6.2603;
 (async()=>{
   await dbLoad();
   for(const h of houses){
-    if(h.lat&&Math.abs(h.lat-BAD_LAT)<0.001&&Math.abs(h.lng-BAD_LNG)<0.001){h.lat=null;h.lng=null;}
+    // Clear bad fallback coord (old Dublin city centre default)
+    if(h.lat&&Math.abs(h.lat-53.3498)<0.001&&Math.abs(h.lng+6.2603)<0.001){h.lat=null;h.lng=null;}
     await geocode(h);
     if(h.lat) placeMarker(h);
   }
