@@ -577,10 +577,8 @@ async function drawGreenOverlay(){
   const bbox=`${Math.min(...lats)-pad},${Math.min(...lngs)-pad},${Math.max(...lats)+pad},${Math.max(...lngs)+pad}`;
   const q=`[out:json][timeout:25];(way["leisure"="park"](${bbox});way["leisure"="nature_reserve"](${bbox});way["landuse"="grass"](${bbox});way["landuse"="recreation_ground"](${bbox});way["leisure"="garden"](${bbox}););out geom;`;
   try{
-    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    const features=(d.elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>({
+    const elements=await overpassQuery(q);
+    const features=(elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>({
       type:'Feature',properties:{name:(el.tags&&el.tags.name)||''},
       geometry:{type:'Polygon',coordinates:[el.geometry.map(p=>[p.lon,p.lat])]}
     }));
@@ -612,15 +610,51 @@ function stopType(tags){
   return 'bus';
 }
 
+async function overpassQuery(q){
+  // Try GET first (simpler, better CORS), fallback to POST
+  const encoded=encodeURIComponent(q);
+  const mirrors=[
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+  ];
+  for(const mirror of mirrors){
+    try{
+      const r=await fetch(`${mirror}?data=${encoded}`,{
+        headers:{'Accept':'application/json'}
+      });
+      if(r.ok){
+        const d=await r.json();
+        console.log(`Overpass OK from ${mirror}, elements:`,d.elements?.length);
+        return d.elements||[];
+      }
+    }catch(e){
+      console.warn(`Overpass GET failed on ${mirror}:`,e.message);
+    }
+    // Try POST on same mirror
+    try{
+      const r=await fetch(mirror,{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'data='+encoded
+      });
+      if(r.ok){
+        const d=await r.json();
+        console.log(`Overpass POST OK from ${mirror}, elements:`,d.elements?.length);
+        return d.elements||[];
+      }
+    }catch(e){
+      console.warn(`Overpass POST failed on ${mirror}:`,e.message);
+    }
+  }
+  console.error('All Overpass mirrors failed');
+  return[];
+}
+
 async function fetchStopsNear(lat,lng){
-  // Larger bbox to catch more stops
   const d=0.018;
   const bbox=`${lat-d},${lng-d*1.5},${lat+d},${lng+d*1.5}`;
-  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox});node["railway"="halt"](${bbox}););out body;`;
-  const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
-  if(!r.ok) throw new Error('Overpass '+r.status);
-  const d2=await r.json();
-  return d2.elements||[];
+  const q=`[out:json][timeout:20];(node["highway"="bus_stop"](${bbox});node["railway"="station"](${bbox});node["railway"="tram_stop"](${bbox}););out body;`;
+  return overpassQuery(q);
 }
 
 async function fetchRoute(fromLat,fromLng,toLat,toLng){
@@ -634,9 +668,8 @@ async function fetchRoute(fromLat,fromLng,toLat,toLng){
 async function fetchRoutesForStop(stopId){
   try{
     const q=`[out:json][timeout:10];node(${stopId});rel(bn)["route"~"bus|train|tram|light_rail"];out tags;`;
-    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
-    const d=await r.json();
-    return(d.elements||[]).map(e=>e.tags.ref||e.tags.name||'').filter(Boolean).slice(0,6);
+    const els=await overpassQuery(q);
+    return els.map(e=>e.tags&&(e.tags.ref||e.tags.name)||'').filter(Boolean).slice(0,6);
   }catch(e){return[];}
 }
 
