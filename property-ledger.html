@@ -151,15 +151,6 @@ footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid v
 
   <div class="savebar" id="saveStatus">Loading saved entries…</div>
 
-  <div class="dossier" data-tab="Backup / Restore" style="margin-bottom:22px;">
-    <div class="sub" style="margin-bottom:10px;">If this tool ever gets revised or rebuilt, auto-save can reset. Copy a backup before big changes, and restore it here after.</div>
-    <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
-      <button class="verdict-btn" style="margin:0; padding:8px 18px;" onclick="copyBackup()">Copy Backup</button>
-      <button class="verdict-btn" style="margin:0; padding:8px 18px; background:var(--sage);" onclick="restoreBackup()">Restore From Box Below</button>
-    </div>
-    <textarea id="backupBox" placeholder="Backup JSON appears here when you click Copy Backup. To restore, paste your saved backup here and click Restore." style="min-height:80px;"></textarea>
-  </div>
-
   <div class="dossier" data-tab="Your Funds" style="margin-bottom:22px;">
     <div class="field-row">
       <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="g_mortgage" value=""></div>
@@ -346,30 +337,6 @@ function applyData(data){
   recalc();
 }
 
-async function copyBackup(){
-  const json = JSON.stringify(gatherData(), null, 2);
-  document.getElementById('backupBox').value = json;
-  try{
-    await navigator.clipboard.writeText(json);
-    document.getElementById('saveStatus').textContent = 'Backup copied to clipboard — paste it somewhere safe';
-  }catch(e){
-    document.getElementById('saveStatus').textContent = 'Backup shown below — select and copy manually';
-  }
-}
-
-function restoreBackup(){
-  const raw = document.getElementById('backupBox').value.trim();
-  if(!raw){ document.getElementById('saveStatus').textContent = 'Paste a backup into the box first'; return; }
-  try{
-    const data = JSON.parse(raw);
-    applyData(data);
-    scheduleSave();
-    document.getElementById('saveStatus').textContent = 'Restored from backup';
-  }catch(e){
-    document.getElementById('saveStatus').textContent = 'That backup text could not be read — check it\'s valid JSON';
-  }
-}
-
 // ---- Persistence (Supabase) ----
 const fieldIds = [
   'g_mortgage','g_savings',
@@ -409,11 +376,11 @@ async function loadSaved(){
       status.textContent = 'Loaded your saved entries';
       return;
     } else {
-      status.textContent = 'No saved entries yet — starting fresh. If you have a backup, paste it above and click Restore.';
+      status.textContent = 'No saved entries yet — starting fresh.';
     }
   }catch(e){
     console.error('Supabase load error:', e);
-    status.textContent = 'Could not reach the database — starting fresh. If you have a backup, paste it above and click Restore.';
+    status.textContent = 'Could not reach the database — starting fresh.';
   }
   criteria.forEach(c=>{
     const w = document.getElementById(`w_${c.key}`);
