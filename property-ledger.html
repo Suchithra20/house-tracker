@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Ledger — Property Comparison</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --ink:#242420;
+  --paper:#E9E6D9;
+  --paper-dark:#DCD8C7;
+  --navy:#1C2541;
+  --brick:#A13D2B;
+  --sage:#4C6444;
+  --brass:#B08D57;
+  --line: rgba(36,36,32,0.15);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', sans-serif;
+  background-image:
+    radial-gradient(rgba(0,0,0,0.02) 1px, transparent 1px);
+  background-size:3px 3px;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px;}
+
+header{border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:28px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;}
+h1{
+  font-family:'Fraunces', serif;
+  font-weight:700;
+  font-size:2.6rem;
+  margin:0;
+  letter-spacing:-0.01em;
+}
+.eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  text-transform:uppercase;
+  font-size:0.72rem;
+  letter-spacing:0.12em;
+  color:var(--brick);
+  margin-bottom:4px;
+}
+.sub{font-size:0.9rem;color:#5a5a52;max-width:420px;}
+
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+@media(max-width:860px){.cols{grid-template-columns:1fr;}}
+
+.dossier{
+  background:var(--paper-dark);
+  border:1px solid var(--line);
+  position:relative;
+  padding:22px 22px 26px;
+}
+.dossier::before{
+  content:attr(data-tab);
+  position:absolute; top:-14px; left:22px;
+  background:var(--navy); color:var(--paper);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.68rem; letter-spacing:0.1em;
+  padding:4px 10px;
+  text-transform:uppercase;
+}
+.field-row{display:flex; gap:10px; margin-bottom:10px;}
+.field{flex:1;}
+label{display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:#6b6b60; margin-bottom:3px; font-family:'IBM Plex Mono',monospace;}
+input[type=text], input[type=number]{
+  width:100%; padding:7px 8px; border:1px solid var(--line); background:var(--paper);
+  font-family:'IBM Plex Mono', monospace; font-size:0.85rem; color:var(--ink);
+}
+input:focus{outline:2px solid var(--navy);}
+
+.section-title{
+  font-family:'Fraunces', serif; font-weight:600; font-size:1.05rem;
+  margin:20px 0 8px; padding-top:14px; border-top:1px dashed var(--line);
+}
+.section-title:first-of-type{border-top:none; padding-top:0; margin-top:16px;}
+
+table.costs{width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:0.82rem;}
+table.costs td{padding:4px 0; border-bottom:1px dotted var(--line);}
+table.costs td.amt{text-align:right; white-space:nowrap;}
+table.costs tr.total td{font-weight:600; border-top:2px solid var(--ink); border-bottom:none; padding-top:7px;}
+table.costs input{width:90px; text-align:right; padding:3px 6px; font-size:0.8rem;}
+
+.note{margin-top:10px;}
+textarea{
+  width:100%; min-height:60px; padding:8px; border:1px solid var(--line); background:var(--paper);
+  font-family:'IBM Plex Sans',sans-serif; font-size:0.82rem; resize:vertical;
+}
+
+.score-panel{
+  margin-top:28px; background:var(--paper-dark); border:1px solid var(--line); padding:22px;
+}
+.score-panel h2{font-family:'Fraunces',serif; font-size:1.3rem; margin:0 0 4px;}
+.score-panel .sub{margin-bottom:16px;}
+.crit-row{display:grid; grid-template-columns:170px 1fr 60px 60px 70px; gap:10px; align-items:center; margin-bottom:10px; font-size:0.85rem;}
+.crit-row .name{font-family:'IBM Plex Mono',monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em;}
+.crit-row input[type=range]{width:100%;}
+.crit-row input[type=number]{width:55px; padding:3px 4px; text-align:center;}
+.crit-head{display:grid; grid-template-columns:170px 1fr 60px 60px 70px; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:0.68rem; text-transform:uppercase; color:#6b6b60; margin-bottom:8px;}
+
+.verdict-btn{
+  display:block; margin:20px auto 0; padding:12px 30px;
+  background:var(--navy); color:var(--paper); border:none;
+  font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.1em; font-size:0.85rem;
+  cursor:pointer;
+}
+.verdict-btn:hover{background:#111827;}
+
+.verdict-wrap{margin-top:28px; text-align:center; min-height:180px; display:flex; align-items:center; justify-content:center;}
+.stamp{
+  display:inline-block; border:4px solid var(--brick); color:var(--brick);
+  padding:18px 34px; transform:rotate(-6deg); font-family:'IBM Plex Mono',monospace;
+  text-transform:uppercase; letter-spacing:0.08em; font-weight:600; font-size:1.3rem;
+  filter: url(#inkTexture);
+  opacity:0; animation:stampIn 0.35s ease-out forwards;
+}
+@keyframes stampIn{
+  0%{opacity:0; transform:rotate(-6deg) scale(1.6);}
+  60%{opacity:1;}
+  100%{opacity:1; transform:rotate(-6deg) scale(1);}
+}
+.stamp small{display:block; font-size:0.55rem; letter-spacing:0.15em; margin-top:4px; font-weight:500;}
+
+.deltabar{max-width:520px; margin:18px auto 0; font-family:'IBM Plex Mono',monospace; font-size:0.78rem;}
+.deltabar .line{display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dotted var(--line);}
+
+footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid var(--line); padding-top:14px; font-family:'IBM Plex Mono',monospace;}
+.savebar{font-size:0.72rem; color:#7a7a70; text-align:right; font-family:'IBM Plex Mono',monospace; margin-bottom:10px;}
+</style>
+</head>
+<body>
+<svg width="0" height="0">
+  <filter id="inkTexture">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="3"/>
+  </filter>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Dublin · Two dossiers, one verdict</div>
+      <h1>The Ledger</h1>
+      <div class="sub">Every cost of buying, side by side — so the cheaper-looking one doesn't quietly win by default.</div>
+    </div>
+  </header>
+
+  <div class="savebar" id="saveStatus">Loading saved entries…</div>
+
+  <div class="dossier" data-tab="Backup / Restore" style="margin-bottom:22px;">
+    <div class="sub" style="margin-bottom:10px;">If this tool ever gets revised or rebuilt, auto-save can reset. Copy a backup before big changes, and restore it here after.</div>
+    <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <button class="verdict-btn" style="margin:0; padding:8px 18px;" onclick="copyBackup()">Copy Backup</button>
+      <button class="verdict-btn" style="margin:0; padding:8px 18px; background:var(--sage);" onclick="restoreBackup()">Restore From Box Below</button>
+    </div>
+    <textarea id="backupBox" placeholder="Backup JSON appears here when you click Copy Backup. To restore, paste your saved backup here and click Restore." style="min-height:80px;"></textarea>
+  </div>
+
+  <div class="dossier" data-tab="Your Funds" style="margin-bottom:22px;">
+    <div class="field-row">
+      <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="g_mortgage" value=""></div>
+      <div class="field"><label>Own savings to put in €</label><input type="number" id="g_savings" value=""></div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- PROPERTY A -->
+    <div class="dossier" data-tab="Property A">
+      <div class="field-row">
+        <div class="field"><label>Nickname</label><input type="text" id="a_name" value="Apt 19, The Gallery, Donabate"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Address</label><input type="text" id="a_addr" value="Turvey Walk, Donabate, Co. Dublin"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Asking Price €</label><input type="number" id="a_asking" value="310000"></div>
+        <div class="field"><label>Your Bid €</label><input type="number" id="a_bid" value="310000"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Size (sqm)</label><input type="number" id="a_size" value=""></div>
+        <div class="field"><label>Beds</label><input type="number" id="a_beds" value="2"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Comparable sale (address, price, date)</label><input type="text" id="a_comp" value="52 The Gallery — sold 5 weeks prior"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>BER Rating</label><input type="text" id="a_ber" value=""></div>
+        <div class="field"><label>Commute (mins)</label><input type="number" id="a_commute" value=""></div>
+      </div>
+
+      <div class="section-title">Once-off buying costs</div>
+      <table class="costs">
+        <tr><td>Purchase price</td><td class="amt" id="a_price_disp">—</td></tr>
+        <tr><td>Deposit (<input type="number" id="a_deppct" value="10" style="width:38px;">%)</td><td class="amt" id="a_deposit">—</td></tr>
+        <tr><td>Stamp duty (auto)</td><td class="amt" id="a_stamp">—</td></tr>
+        <tr><td>Legal / solicitor fees</td><td class="amt"><input type="number" id="a_legal" value="2500"></td></tr>
+        <tr><td>Structural survey</td><td class="amt"><input type="number" id="a_survey" value="450"></td></tr>
+        <tr><td>Registration fee</td><td class="amt"><input type="number" id="a_reg" value="600"></td></tr>
+        <tr><td>Bank valuation / arrangement fee</td><td class="amt"><input type="number" id="a_bankfee" value="150"></td></tr>
+        <tr><td>Moving costs</td><td class="amt"><input type="number" id="a_move" value="500"></td></tr>
+        <tr><td>Immediate furnishing / snag budget</td><td class="amt"><input type="number" id="a_furnish" value="0"></td></tr>
+        <tr class="total"><td>Total cash needed at closing</td><td class="amt" id="a_total">—</td></tr>
+      </table>
+
+      <div class="section-title">Ongoing annual costs</div>
+      <table class="costs">
+        <tr><td>Mortgage rate (%)</td><td class="amt"><input type="number" id="a_rate" value="3.9" step="0.1"></td></tr>
+        <tr><td>Term (years)</td><td class="amt"><input type="number" id="a_term" value="30"></td></tr>
+        <tr><td>Est. monthly mortgage repayment</td><td class="amt" id="a_monthly">—</td></tr>
+        <tr><td>Local Property Tax (annual)</td><td class="amt"><input type="number" id="a_lpt" value=""></td></tr>
+        <tr><td>Management / service charge (annual)</td><td class="amt"><input type="number" id="a_mgmt" value=""></td></tr>
+        <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="a_ins" value=""></td></tr>
+        <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="a_mpi" value=""></td></tr>
+      </table>
+      <div class="note" id="a_afford" style="font-family:'IBM Plex Mono',monospace; font-size:0.78rem; margin-top:8px;"></div>
+
+      <div class="note"><label>Pros / cons notes</label><textarea id="a_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
+    </div>
+
+    <!-- PROPERTY B -->
+    <div class="dossier" data-tab="Property B">
+      <div class="field-row">
+        <div class="field"><label>Nickname</label><input type="text" id="b_name" value="Property B"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Address</label><input type="text" id="b_addr" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Asking Price €</label><input type="number" id="b_asking" value="0"></div>
+        <div class="field"><label>Your Bid €</label><input type="number" id="b_bid" value="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Size (sqm)</label><input type="number" id="b_size" value=""></div>
+        <div class="field"><label>Beds</label><input type="number" id="b_beds" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Comparable sale (address, price, date)</label><input type="text" id="b_comp" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>BER Rating</label><input type="text" id="b_ber" value=""></div>
+        <div class="field"><label>Commute (mins)</label><input type="number" id="b_commute" value=""></div>
+      </div>
+
+      <div class="section-title">Once-off buying costs</div>
+      <table class="costs">
+        <tr><td>Purchase price</td><td class="amt" id="b_price_disp">—</td></tr>
+        <tr><td>Deposit (<input type="number" id="b_deppct" value="10" style="width:38px;">%)</td><td class="amt" id="b_deposit">—</td></tr>
+        <tr><td>Stamp duty (auto)</td><td class="amt" id="b_stamp">—</td></tr>
+        <tr><td>Legal / solicitor fees</td><td class="amt"><input type="number" id="b_legal" value="2500"></td></tr>
+        <tr><td>Structural survey</td><td class="amt"><input type="number" id="b_survey" value="450"></td></tr>
+        <tr><td>Registration fee</td><td class="amt"><input type="number" id="b_reg" value="600"></td></tr>
+        <tr><td>Bank valuation / arrangement fee</td><td class="amt"><input type="number" id="b_bankfee" value="150"></td></tr>
+        <tr><td>Moving costs</td><td class="amt"><input type="number" id="b_move" value="500"></td></tr>
+        <tr><td>Immediate furnishing / snag budget</td><td class="amt"><input type="number" id="b_furnish" value="0"></td></tr>
+        <tr class="total"><td>Total cash needed at closing</td><td class="amt" id="b_total">—</td></tr>
+      </table>
+
+      <div class="section-title">Ongoing annual costs</div>
+      <table class="costs">
+        <tr><td>Mortgage rate (%)</td><td class="amt"><input type="number" id="b_rate" value="3.9" step="0.1"></td></tr>
+        <tr><td>Term (years)</td><td class="amt"><input type="number" id="b_term" value="30"></td></tr>
+        <tr><td>Est. monthly mortgage repayment</td><td class="amt" id="b_monthly">—</td></tr>
+        <tr><td>Local Property Tax (annual)</td><td class="amt"><input type="number" id="b_lpt" value=""></td></tr>
+        <tr><td>Management / service charge (annual)</td><td class="amt"><input type="number" id="b_mgmt" value=""></td></tr>
+        <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="b_ins" value=""></td></tr>
+        <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="b_mpi" value=""></td></tr>
+      </table>
+      <div class="note" id="b_afford" style="font-family:'IBM Plex Mono',monospace; font-size:0.78rem; margin-top:8px;"></div>
+
+      <div class="note"><label>Pros / cons notes</label><textarea id="b_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- SCORING -->
+  <div class="score-panel">
+    <h2>Weigh the evidence</h2>
+    <div class="sub">Score each property 1–10 on what actually matters to you. Adjust the weight if a factor should count more.</div>
+
+    <div class="crit-head"><div>Criterion</div><div>Weight</div><div>Prop A</div><div>Prop B</div><div></div></div>
+    <div id="critRows"></div>
+
+    <button class="verdict-btn" onclick="renderVerdict()">Render Verdict</button>
+    <div class="verdict-wrap" id="verdictWrap"></div>
+  </div>
+
+  <footer>
+    Figures are working estimates, not legal or financial advice — confirm stamp duty, registration fees, and LPT banding with your solicitor before bidding. Stamp duty here is calculated at 1% up to €1.5m (standard residential rate); properties above that or bulk purchases carry different rates.
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://ptcfdabyiuzgylmjluic.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_rkZSjbF2pHWctDF_ThQREw_j1UT2Ty1';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ROW_ID = 'main';
+const criteria = [
+  {key:'price', name:'Price / Value'},
+  {key:'location', name:'Location & Commute'},
+  {key:'condition', name:'Condition & BER'},
+  {key:'growth', name:'Investment / Growth'},
+  {key:'layout', name:'Space & Layout'}
+];
+
+const critRows = document.getElementById('critRows');
+criteria.forEach(c=>{
+  const row = document.createElement('div');
+  row.className='crit-row';
+  row.innerHTML = `
+    <div class="name">${c.name}</div>
+    <input type="range" min="1" max="5" value="3" id="w_${c.key}">
+    <input type="number" min="1" max="10" value="5" id="a_s_${c.key}">
+    <input type="number" min="1" max="10" value="5" id="b_s_${c.key}">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#7a7a70;" id="w_${c.key}_disp">wt 3</div>
+  `;
+  critRows.appendChild(row);
+});
+criteria.forEach(c=>{
+  document.getElementById(`w_${c.key}`).addEventListener('input', e=>{
+    document.getElementById(`w_${c.key}_disp`).textContent = 'wt ' + e.target.value;
+  });
+});
+
+function gatherData(){
+  const data = {};
+  fieldIds.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) data[id] = el.value;
+  });
+  return data;
+}
+
+function applyData(data){
+  Object.keys(data).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = data[id];
+  });
+  criteria.forEach(c=>{
+    const w = document.getElementById(`w_${c.key}`);
+    if(w) document.getElementById(`w_${c.key}_disp`).textContent = 'wt ' + w.value;
+  });
+  recalc();
+}
+
+async function copyBackup(){
+  const json = JSON.stringify(gatherData(), null, 2);
+  document.getElementById('backupBox').value = json;
+  try{
+    await navigator.clipboard.writeText(json);
+    document.getElementById('saveStatus').textContent = 'Backup copied to clipboard — paste it somewhere safe';
+  }catch(e){
+    document.getElementById('saveStatus').textContent = 'Backup shown below — select and copy manually';
+  }
+}
+
+function restoreBackup(){
+  const raw = document.getElementById('backupBox').value.trim();
+  if(!raw){ document.getElementById('saveStatus').textContent = 'Paste a backup into the box first'; return; }
+  try{
+    const data = JSON.parse(raw);
+    applyData(data);
+    scheduleSave();
+    document.getElementById('saveStatus').textContent = 'Restored from backup';
+  }catch(e){
+    document.getElementById('saveStatus').textContent = 'That backup text could not be read — check it\'s valid JSON';
+  }
+}
+
+// ---- Persistence (Supabase) ----
+const fieldIds = [
+  'g_mortgage','g_savings',
+  'a_name','a_addr','a_asking','a_bid','a_size','a_beds','a_comp','a_ber','a_commute',
+  'a_deppct','a_legal','a_survey','a_reg','a_bankfee','a_move','a_furnish',
+  'a_rate','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
+  'b_name','b_addr','b_asking','b_bid','b_size','b_beds','b_comp','b_ber','b_commute',
+  'b_deppct','b_legal','b_survey','b_reg','b_bankfee','b_move','b_furnish',
+  'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes'
+];
+criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
+
+let saveTimer = null;
+function scheduleSave(){
+  const status = document.getElementById('saveStatus');
+  status.textContent = 'Saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    const data = gatherData();
+    try{
+      const { error } = await sb.from('property_ledger').upsert({ id: ROW_ID, data, updated_at: new Date().toISOString() });
+      status.textContent = error ? 'Save failed — ' + error.message : 'Saved · ' + new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){
+      status.textContent = 'Save failed — check connection';
+      console.error('Supabase save error:', e);
+    }
+  }, 500);
+}
+
+async function loadSaved(){
+  const status = document.getElementById('saveStatus');
+  try{
+    const { data: rows, error } = await sb.from('property_ledger').select('data').eq('id', ROW_ID).maybeSingle();
+    if(error) throw error;
+    if(rows && rows.data){
+      applyData(rows.data);
+      status.textContent = 'Loaded your saved entries';
+      return;
+    } else {
+      status.textContent = 'No saved entries yet — starting fresh. If you have a backup, paste it above and click Restore.';
+    }
+  }catch(e){
+    console.error('Supabase load error:', e);
+    status.textContent = 'Could not reach the database — starting fresh. If you have a backup, paste it above and click Restore.';
+  }
+  criteria.forEach(c=>{
+    const w = document.getElementById(`w_${c.key}`);
+    if(w) document.getElementById(`w_${c.key}_disp`).textContent = 'wt ' + w.value;
+  });
+  recalc();
+}
+
+function fmt(n){
+  if(isNaN(n) || n===null) return '—';
+  return '€' + Math.round(n).toLocaleString('en-IE');
+}
+function num(id){ return parseFloat(document.getElementById(id).value) || 0; }
+
+function stampDuty(price){
+  if(price<=0) return 0;
+  if(price<=1500000) return price*0.01;
+  return 1500000*0.01 + (price-1500000)*0.06;
+}
+
+function calcSide(p){
+  const price = num(`${p}_bid`) || num(`${p}_asking`);
+  document.getElementById(`${p}_price_disp`).textContent = fmt(price);
+  const depPct = num(`${p}_deppct`);
+  const deposit = price * depPct/100;
+  document.getElementById(`${p}_deposit`).textContent = fmt(deposit);
+  const stamp = stampDuty(price);
+  document.getElementById(`${p}_stamp`).textContent = fmt(stamp);
+  const legal = num(`${p}_legal`), survey = num(`${p}_survey`), reg = num(`${p}_reg`),
+        bankfee = num(`${p}_bankfee`), move = num(`${p}_move`), furnish = num(`${p}_furnish`);
+  const total = deposit + stamp + legal + survey + reg + bankfee + move + furnish;
+  document.getElementById(`${p}_total`).textContent = fmt(total);
+
+  const loan = price - deposit;
+  const rate = num(`${p}_rate`)/100/12;
+  const n = num(`${p}_term`)*12;
+  let monthly = 0;
+  if(loan>0 && rate>0 && n>0){
+    monthly = loan * rate / (1-Math.pow(1+rate,-n));
+  }
+  document.getElementById(`${p}_monthly`).textContent = monthly ? fmt(monthly) : '—';
+
+  const lpt = num(`${p}_lpt`), mgmt = num(`${p}_mgmt`), ins = num(`${p}_ins`), mpi = num(`${p}_mpi`);
+
+  const mortgageAvail = num('g_mortgage');
+  const savings = num('g_savings');
+  const affordEl = document.getElementById(`${p}_afford`);
+  if(affordEl){
+    let lines = '';
+    if(mortgageAvail>0){
+      const shortfall = loan - mortgageAvail;
+      lines += shortfall>0
+        ? `Loan needed ${fmt(loan)} exceeds mortgage approved by ${fmt(shortfall)}<br>`
+        : `Loan needed ${fmt(loan)} — within mortgage approved (${fmt(mortgageAvail-loan)} spare)<br>`;
+    }
+    if(savings>0){
+      const cashShort = total - savings;
+      lines += cashShort>0
+        ? `Cash needed exceeds savings by ${fmt(cashShort)}`
+        : `Cash needed covered — ${fmt(savings-total)} savings left over`;
+    }
+    affordEl.innerHTML = lines;
+  }
+
+  return {price, total, monthly: monthly||0, lpt, mgmt, ins, mpi};
+}
+
+function recalc(){
+  const a = calcSide('a');
+  const b = calcSide('b');
+  return {a,b};
+}
+
+['a','b'].forEach(p=>{
+  ['asking','bid','deppct','legal','survey','reg','bankfee','move','furnish','rate','term','lpt','mgmt','ins','mpi'].forEach(f=>{
+    const el = document.getElementById(`${p}_${f}`);
+    if(el) el.addEventListener('input', recalc);
+  });
+});
+['g_mortgage','g_savings'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', recalc);
+});
+
+// Save on any change to any tracked field
+fieldIds.forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', scheduleSave);
+});
+criteria.forEach(c=>{
+  document.getElementById(`w_${c.key}`).addEventListener('input', scheduleSave);
+});
+
+loadSaved();
+
+function renderVerdict(){
+  const {a,b} = recalc();
+  let sumA=0, sumB=0, sumW=0;
+  criteria.forEach(c=>{
+    const w = num(`w_${c.key}`);
+    sumA += num(`a_s_${c.key}`) * w;
+    sumB += num(`b_s_${c.key}`) * w;
+    sumW += w;
+  });
+  const scoreA = sumW? (sumA/sumW).toFixed(1) : 0;
+  const scoreB = sumW? (sumB/sumW).toFixed(1) : 0;
+
+  const nameA = document.getElementById('a_name').value || 'Property A';
+  const nameB = document.getElementById('b_name').value || 'Property B';
+
+  let winner, winScore, loseScore;
+  if(scoreA > scoreB){ winner=nameA; winScore=scoreA; loseScore=scoreB; }
+  else if(scoreB > scoreA){ winner=nameB; winScore=scoreB; loseScore=scoreA; }
+  else { winner='TOO CLOSE TO CALL'; winScore=scoreA; loseScore=scoreB; }
+
+  const monthlyDelta = (a.monthly+a.lpt/12+a.mgmt/12+a.ins/12+a.mpi/12) - (b.monthly+b.lpt/12+b.mgmt/12+b.ins/12+b.mpi/12);
+  const totalDelta = a.total - b.total;
+
+  const wrap = document.getElementById('verdictWrap');
+  wrap.innerHTML = `
+    <div>
+      <div class="stamp" id="stampEl">
+        ${winner}
+        <small>${winner.includes('CLOSE') ? `Both score ${scoreA}` : `Score ${winScore} vs ${loseScore}`}</small>
+      </div>
+      <div class="deltabar">
+        <div class="line"><span>Upfront cash: ${nameA}</span><span>${fmt(a.total)}</span></div>
+        <div class="line"><span>Upfront cash: ${nameB}</span><span>${fmt(b.total)}</span></div>
+        <div class="line"><span>Difference in cash needed</span><span>${fmt(Math.abs(totalDelta))} ${totalDelta>0? 'more for A':'more for B'}</span></div>
+        <div class="line"><span>Monthly outgoings (mortgage+LPT+mgmt+ins)</span><span>${fmt(Math.abs(monthlyDelta))}/mo ${monthlyDelta>0?'more for A':'more for B'}</span></div>
+      </div>
+    </div>
+  `;
+  // restart animation
+  const el = document.getElementById('stampEl');
+  el.style.animation='none'; el.offsetHeight; el.style.animation=null;
+}
+</script>
+</body>
+</html>
