@@ -115,6 +115,23 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 .crit-row input[type=number]{width:52px; padding:4px 4px; text-align:center;}
 .crit-head{display:grid; grid-template-columns:170px 1fr 56px 56px 56px; gap:12px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--faint); margin-bottom:10px;}
 
+.ai-score-bar{display:flex; gap:10px; margin-top:18px; padding-top:18px; border-top:1px solid var(--border); flex-wrap:wrap;}
+.ai-btn{
+  padding:9px 16px; border-radius:8px; border:none; background:var(--accent); color:#fff;
+  font-size:0.82rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+}
+.ai-btn:hover{background:#3730A3;}
+.ai-btn.secondary{background:transparent; color:var(--accent); border:1px solid var(--accent);}
+.ai-btn.secondary:hover{background:var(--accent-soft);}
+
+.rationale-panel{margin-top:16px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:18px;}
+.rationale-title{font-weight:700; font-size:0.88rem; margin-bottom:12px;}
+.rationale-list{margin:0; padding-left:18px; font-size:0.82rem; line-height:1.6; color:var(--ink);}
+.rationale-list li{margin-bottom:10px;}
+.rationale-list a{color:var(--accent); text-decoration:none; font-weight:500;}
+.rationale-list a:hover{text-decoration:underline;}
+.rationale-note{margin-top:8px; font-size:0.8rem; color:var(--muted); font-style:italic;}
+
 footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px solid var(--border); padding-top:16px; line-height:1.6;}
 </style>
 </head>
@@ -313,6 +330,22 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
 
     <div class="crit-head"><div>Criterion</div><div>Weight</div><div>Prop A</div><div>Prop B</div><div></div></div>
     <div id="critRows"></div>
+
+    <div class="ai-score-bar">
+      <button class="ai-btn" onclick="applyAIScores('a')">Apply AI scores — Property A</button>
+      <button class="ai-btn secondary" onclick="toggleRationale()">View rationale &amp; sources</button>
+    </div>
+    <div class="rationale-panel" id="rationalePanel" style="display:none;">
+      <div class="rationale-title">Property A — Apartment 19, Block A, The Gallery, Donabate</div>
+      <ul class="rationale-list">
+        <li><b>Price/Value — 8:</b> Comparable unit 180 The Gallery sold €310,000 (Apr 2025); Apt 19 is currently asking €325,000, so your €310k target sits at last year's comp price in an appreciating development. <a href="https://propertypriceregisterireland.com/details/180_the_gallery_turvey_walk_donabate_co_dublin_k36_kc78_ireland-782527/" target="_blank" rel="noopener">Price Register ↗</a> · <a href="https://www.daft.ie/for-sale/apartment-19-block-a-the-gallery-turvey-walk-donabate-co-dublin/6588219" target="_blank" rel="noopener">Daft listing ↗</a></li>
+        <li><b>Location & Commute — 6:</b> 4–5 min walk to Donabate station; not yet on DART (nearest DART is Malahide). ~24–32 min train to Connolly plus walk to IFSC, roughly 40–45 min door to desk. <a href="https://www.rome2rio.com/s/Donabate/Navan" target="_blank" rel="noopener">Rome2Rio journey data ↗</a> · <a href="https://en.wikipedia.org/wiki/Donabate_railway_station" target="_blank" rel="noopener">Donabate station ↗</a></li>
+        <li><b>Condition & BER — 6:</b> Apt 19's own BER unconfirmed; comparable units in the same block run B1–C1, more recent sales trending B-rated. Management fee ~€2,888/yr. <a href="https://www.myhome.ie/residential/brochure/apartment-185-the-gallery-turvey-walk-donabate-county-dublin/4853295" target="_blank" rel="noopener">Comparable BER example ↗</a></li>
+        <li><b>Investment/Growth — 8:</b> DART+ Coastal North will electrify and extend DART through Donabate; Fingal is one of Ireland's fastest-growing counties with sustained housing demand. <a href="https://www.gov.ie/en/department-of-transport/press-releases/minister-ryan-secures-approval-of-dart-coastal-north/" target="_blank" rel="noopener">Gov.ie DART+ announcement ↗</a></li>
+        <li><b>Space & Layout — 6:</b> Typical 2-bed layout for the development, around 70–77sqm — solid but unremarkable versus other units on the market here. <a href="https://www.daft.ie/for-sale/apartment-162-block-h-the-gallery-turvey-walk-donabate-co-dublin/6291540" target="_blank" rel="noopener">Comparable listing ↗</a></li>
+      </ul>
+      <div class="rationale-note">Property B has no address or listing saved yet, so no AI scoring or sourcing exists for it — add a Daft link or address and ask again.</div>
+    </div>
   </div>
 
   <footer>
@@ -504,6 +537,30 @@ function recalc(){
   renderMedia('a');
   renderMedia('b');
   return {a,b};
+}
+
+// AI-researched scores, grounded in Property Price Register, Daft, and Fingal transport planning data
+const AI_SCORES = {
+  a: { price: 8, location: 6, condition: 6, growth: 8, layout: 6 }
+};
+
+function applyAIScores(p){
+  const scores = AI_SCORES[p];
+  if(!scores){
+    alert('No AI research is available for this property yet — add its address or Daft link and ask again.');
+    return;
+  }
+  Object.keys(scores).forEach(key=>{
+    const el = document.getElementById(`${p}_s_${key}`);
+    if(el) el.value = scores[key];
+  });
+  recalc();
+  scheduleSave();
+}
+
+function toggleRationale(){
+  const panel = document.getElementById('rationalePanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
 // ---- Persistence (Supabase) ----
