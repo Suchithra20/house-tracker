@@ -165,6 +165,36 @@ table.furnish-items tr.f-total td{font-weight:700; border-top:1px solid var(--in
 .furnish-apply-btn:hover{background:#3730A3;}
 
 footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px solid var(--border); padding-top:16px; line-height:1.6;}
+
+.help-fab{
+  position:fixed; bottom:24px; right:24px; width:52px; height:52px; border-radius:50%;
+  background:var(--accent); color:#fff; border:none; font-size:1.3rem; font-weight:700;
+  cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.2); z-index:100;
+}
+.help-fab:hover{background:#3730A3;}
+.help-panel{
+  position:fixed; bottom:88px; right:24px; width:330px; max-height:440px; background:var(--card);
+  border:1px solid var(--border); border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.18);
+  display:flex; flex-direction:column; z-index:100; overflow:hidden;
+}
+.help-header{
+  background:var(--ink); color:#fff; padding:12px 14px; font-size:0.85rem; font-weight:700;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.help-close{background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer; line-height:1;}
+.help-log{flex:1; overflow-y:auto; padding:12px 14px; max-height:280px;}
+.help-msg{font-size:0.82rem; line-height:1.5; margin-bottom:10px; padding:8px 10px; border-radius:8px;}
+.help-bot{background:var(--bg); color:var(--ink);}
+.help-user{background:var(--accent-soft); color:var(--ink); text-align:right;}
+.help-input-row{display:flex; gap:6px; padding:10px; border-top:1px solid var(--border);}
+.help-input-row input{
+  flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:8px; font-size:0.82rem; font-family:'Inter',sans-serif;
+}
+.help-input-row button{
+  padding:7px 12px; border:none; border-radius:8px; background:var(--accent); color:#fff;
+  font-size:0.8rem; font-weight:600; cursor:pointer;
+}
+.help-input-row button:hover{background:#3730A3;}
 </style>
 </head>
 <body>
@@ -212,6 +242,14 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     </div>
   </div>
 
+  <div class="dossier" style="margin-bottom:20px;">
+    <div class="dossier-label">Mortgage — Shared for Both Properties</div>
+    <div class="field-row">
+      <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="g_mortgage" value=""></div>
+    </div>
+    <div class="sub" style="margin-top:2px;">One approved amount applies to both — each property below still works out its own price gap and repayment from it.</div>
+  </div>
+
   <div class="cols">
     <!-- PROPERTY A -->
     <div class="dossier">
@@ -234,7 +272,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="280000"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
         <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
       </div>
       <div class="field-row">
@@ -322,7 +359,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Your Offer €</label><input type="number" id="b_bid" value="0"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="b_mortgage" value=""></div>
         <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
       </div>
       <div class="field-row">
@@ -491,6 +527,22 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   </footer>
 </div>
 
+<button class="help-fab" id="helpFab" onclick="toggleHelp()">?</button>
+<div class="help-panel" id="helpPanel" style="display:none;">
+  <div class="help-header">
+    <span>Ask about this tool</span>
+    <button class="help-close" onclick="toggleHelp()">×</button>
+  </div>
+  <div class="help-log" id="helpLog">
+    <div class="help-msg help-bot">Ask me things like "how is stamp duty calculated" or "what does green mortgage mean" — I answer from a built-in FAQ, not a live AI, so answers are about how this tool works rather than open-ended questions.</div>
+  </div>
+  <div class="help-input-row">
+    <input type="text" id="helpInput" placeholder="Type a question…" onkeydown="if(event.key==='Enter') askHelp()">
+    <button onclick="askHelp()">Ask</button>
+  </div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://ptcfdabyiuzgylmjluic.supabase.co';
@@ -536,7 +588,7 @@ function calcSide(p){
   const price = num(`${p}_bid`) || num(`${p}_asking`);
   document.getElementById(`${p}_price_disp`).textContent = fmt(price);
 
-  const mortgageAvail = num(`${p}_mortgage`);
+  const mortgageAvail = num('g_mortgage');
   // Loan used: capped at approved mortgage, else assume 90% LTV as a working default
   const loanUsed = price>0 ? (mortgageAvail>0 ? Math.min(mortgageAvail, price) : price*0.9) : 0;
   const priceGap = Math.max(0, price - loanUsed);
@@ -742,6 +794,44 @@ function switchTab(tab){
   document.getElementById('tabBtnBudget').classList.toggle('active', tab === 'budget');
 }
 
+// ---- Built-in FAQ helper (no live API — see chat notes on why) ----
+const HELP_FAQ = [
+  { keys:['stamp duty'], a:'Stamp duty is calculated at 1% of the offer price up to €1.5m, and 6% on anything above €1.5m — the standard Irish residential rate. It updates automatically as you change the offer price.' },
+  { keys:['green mortgage','green rate'], a:'Most Irish lenders (AIB, EBS, PTSB, Haven) offer a discounted "green" mortgage rate — typically 0.1–0.3% lower — for homes with a BER of B3 or better. Tick the "Green mortgage rate applies" box on a property if its BER qualifies, and the discount is subtracted from the rate used in the repayment calculation.' },
+  { keys:['ber'], a:'BER (Building Energy Rating) measures a home\'s energy efficiency from A to G. It matters for comfort and running costs, and — above B3 — it can unlock a cheaper green mortgage rate too.' },
+  { keys:['ltv','loan to value','90%'], a:'If you haven\'t entered a Mortgage Approved amount, the tool assumes a 90% loan-to-value as a placeholder so the numbers aren\'t blank — enter your actual AIP figure in the shared field above the two properties for an accurate split.' },
+  { keys:['total cash','cash needed','savings needed'], a:'Total cash needed = the gap between the offer price and your mortgage, plus stamp duty, legal fees, survey, registration, bank fees, moving costs, repairs, and furnishing. It\'s shown at the top of each property and in the highlighted "Savings you need to put in" figure.' },
+  { keys:['mortgage protection'], a:'Mortgage protection insurance is a legal requirement for most Irish mortgages — it pays off the remaining loan if you die during the term. Enter your quote in the annual costs table and it rolls into the monthly total too.' },
+  { keys:['monthly budget','left over','leftover'], a:'The Monthly Budget tab takes your take-home salary, subtracts each property\'s monthly housing costs (mortgage + LPT + management + insurances) plus your other spending, and shows what\'s left over for each — so you can compare lifestyle impact, not just closing costs.' },
+  { keys:['furnishing','furniture budget'], a:'Click "breakdown" next to the furnishing line in either property\'s cost table for an itemized 15-item checklist (sofa, beds, kitchenware, etc.) totaling around €4,000 — click the apply button there to use that figure.' },
+  { keys:['verdict','winner','score'], a:'The verdict banner combines your weighted criterion scores (Price, Location, Condition, Growth, Layout) with the cash and monthly cost gap between the two properties to suggest a winner — but it\'s a nudge, not a final answer.' },
+  { keys:['ai score','apply ai'], a:'The "Apply AI scores" buttons fill in the criterion sliders using research I did on each property — comparable sales, commute data, BER, and growth outlook. Click "View rationale & sources" to see exactly why, with links.' },
+  { keys:['save','saving','database','supabase'], a:'Everything you enter saves automatically to a Supabase database a second or so after you stop typing — the status line at the top shows "Saved" once it\'s through. It reloads automatically next time you open this page.' },
+  { keys:['repairs','renovation'], a:'The Repairs / renovation budget field is a separate line from furnishing — use it for structural or condition-related work (rewiring, damp, roof, etc.), while furnishing covers furniture and soft fittings.' }
+];
+
+function toggleHelp(){
+  const panel = document.getElementById('helpPanel');
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
+function askHelp(){
+  const input = document.getElementById('helpInput');
+  const q = input.value.trim();
+  if(!q) return;
+  const log = document.getElementById('helpLog');
+  log.innerHTML += `<div class="help-msg help-user">${q.replace(/</g,'&lt;')}</div>`;
+
+  const qLower = q.toLowerCase();
+  const match = HELP_FAQ.find(item => item.keys.some(k => qLower.includes(k)));
+  const answer = match
+    ? match.a
+    : 'I don\'t have a built-in answer for that yet — I can help with questions about how this tool calculates things (stamp duty, green mortgage, cash needed, monthly budget, scoring, saving). For anything else, ask in the chat where you built this tool.';
+  log.innerHTML += `<div class="help-msg help-bot">${answer}</div>`;
+  input.value = '';
+  log.scrollTop = log.scrollHeight;
+}
+
 // AI-researched scores, grounded in Property Price Register, Daft, and Fingal transport planning data
 const AI_SCORES = {
   a: { price: 8, location: 6, condition: 7, growth: 8, layout: 6 },
@@ -811,10 +901,11 @@ function applyFurnishBudget(p){
 
 // ---- Persistence (Supabase) ----
 const fieldIds = [
-  'a_name','a_addr','a_asking','a_bid','a_mortgage','a_savings','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
+  'g_mortgage',
+  'a_name','a_addr','a_asking','a_bid','a_savings','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
   'a_legal','a_survey','a_reg','a_bankfee','a_move','a_repairs','a_furnish',
   'a_rate','a_green','a_greendisc','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
-  'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
+  'b_name','b_addr','b_asking','b_bid','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_green','b_greendisc','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
   'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other'
@@ -886,8 +977,9 @@ async function loadSaved(){
 }
 
 // Wire up recalculation
+document.getElementById('g_mortgage').addEventListener('input', recalc);
 ['a','b'].forEach(p=>{
-  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','green','greendisc','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
+  ['asking','bid','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','green','greendisc','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
