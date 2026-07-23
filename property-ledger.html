@@ -227,13 +227,17 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
 }
 .signout-btn:hover{color:var(--ink); border-color:var(--ink);}
 
-.savings-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+.savings-row{display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;}
 .savings-row input[type=text]{flex:1.4;}
 .savings-row input[type=number]{flex:1; text-align:right;}
 .savings-row .remove-src{
   background:none; border:none; color:var(--faint); font-size:1.1rem; cursor:pointer; padding:0 4px; line-height:1;
 }
 .savings-row .remove-src:hover{color:#DC2626;}
+.savings-row .future-toggle{
+  display:flex; align-items:center; gap:5px; font-size:0.74rem; color:var(--muted); white-space:nowrap; flex-shrink:0;
+}
+.savings-row .future-toggle input{width:auto;}
 </style>
 </head>
 <body>
@@ -586,7 +590,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   <div id="tabSavings" style="display:none;">
     <div class="dossier" style="margin-bottom:20px;">
       <div class="dossier-label">Your Savings</div>
-      <div class="sub" style="margin-bottom:14px;">Add every place you're holding savings. An emergency fund of 6 months' salary is set aside automatically — only what's left over counts toward the house.</div>
+      <div class="sub" style="margin-bottom:14px;">Add every place you're holding savings. An emergency fund of 6 months' salary is reserved automatically, and anything you mark "for future" (car, wedding, etc.) is set aside too — only what's left counts toward the house.</div>
       <div id="savingsSourcesList"></div>
       <button class="mini-btn" style="margin-top:6px; text-decoration:none; border:1px solid var(--accent); border-radius:6px; padding:5px 10px;" onclick="addSavingsSource()">+ Add source</button>
       <input type="hidden" id="savings_sources_data" value="">
@@ -594,6 +598,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <table class="costs" style="margin-top:16px;">
         <tr><td>Total across all sources</td><td class="amt" id="savingsTotal">—</td></tr>
         <tr><td>Emergency fund reserved (6 × monthly salary)</td><td class="amt" id="savingsEmergency">—</td></tr>
+        <tr><td>Funds for future (car, wedding, etc.)</td><td class="amt" id="savingsFuture">—</td></tr>
         <tr class="total"><td>Usable toward a house</td><td class="amt" id="savingsUsable">—</td></tr>
       </table>
     </div>
@@ -871,6 +876,7 @@ function renderSavingsSources(){
     <div class="savings-row">
       <input type="text" placeholder="Source name (e.g. Revolut, Credit Union)" value="${(s.name||'').replace(/"/g,'&quot;')}" oninput="updateSavingsSource(${i}, 'name', this.value)">
       <input type="number" placeholder="Amount €" value="${s.amount||''}" oninput="updateSavingsSource(${i}, 'amount', this.value)">
+      <label class="future-toggle"><input type="checkbox" ${s.future ? 'checked' : ''} onchange="updateSavingsSource(${i}, 'future', this.checked)"> Marked for future</label>
       <button class="remove-src" onclick="removeSavingsSource(${i})" title="Remove">×</button>
     </div>
   `).join('');
@@ -878,7 +884,7 @@ function renderSavingsSources(){
 }
 
 function addSavingsSource(){
-  savingsSources.push({name:'', amount:0});
+  savingsSources.push({name:'', amount:0, future:false});
   renderSavingsSources();
 }
 
@@ -889,7 +895,9 @@ function removeSavingsSource(i){
 }
 
 function updateSavingsSource(i, field, value){
-  savingsSources[i][field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  if(field === 'amount') savingsSources[i][field] = parseFloat(value)||0;
+  else if(field === 'future') savingsSources[i][field] = !!value;
+  else savingsSources[i][field] = value;
   syncSavingsData();
   calcBudget(lastA, lastB);
 }
@@ -901,13 +909,15 @@ function syncSavingsData(){
 
 function calcSavingsSummary(){
   const total = savingsSources.reduce((s,i)=>s+(i.amount||0), 0);
+  const future = savingsSources.filter(i=>i.future).reduce((s,i)=>s+(i.amount||0), 0);
   const salary = num('bud_salary');
   const emergency = salary * 6;
-  const usable = Math.max(0, total - emergency);
+  const usable = Math.max(0, total - emergency - future);
   document.getElementById('savingsTotal').textContent = total ? fmt(total) : '—';
   document.getElementById('savingsEmergency').textContent = salary ? fmt(emergency) : '—';
-  document.getElementById('savingsUsable').textContent = salary ? fmt(usable) : (total ? fmt(total) : '—');
-  return {total, emergency, usable};
+  document.getElementById('savingsFuture').textContent = future ? fmt(future) : '—';
+  document.getElementById('savingsUsable').textContent = (salary || future) ? fmt(usable) : (total ? fmt(total) : '—');
+  return {total, emergency, future, usable};
 }
 
 function calcBudget(a, b){
