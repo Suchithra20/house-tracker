@@ -195,16 +195,53 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   font-size:0.8rem; font-weight:600; cursor:pointer;
 }
 .help-input-row button:hover{background:#3730A3;}
+
+.auth-gate{
+  min-height:70vh; display:flex; align-items:center; justify-content:center;
+}
+.auth-box{
+  max-width:360px; width:100%; background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:32px; text-align:left;
+}
+.auth-box input[type=email]{
+  width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+  font-family:'Inter',sans-serif; font-size:0.9rem; margin-bottom:12px;
+}
+.auth-btn{
+  width:100%; padding:11px; border:none; border-radius:8px; background:var(--accent); color:#fff;
+  font-size:0.9rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;
+}
+.auth-btn:hover{background:#3730A3;}
+.auth-msg{margin-top:12px; font-size:0.82rem; color:var(--muted); line-height:1.5;}
+.signout-btn{
+  background:none; border:1px solid var(--border); border-radius:8px; padding:6px 12px;
+  font-size:0.78rem; font-weight:600; color:var(--muted); cursor:pointer; font-family:'Inter',sans-serif;
+}
+.signout-btn:hover{color:var(--ink); border-color:var(--ink);}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <div id="authGate" class="auth-gate">
+    <div class="auth-box">
+      <div class="eyebrow">Family access only</div>
+      <h1 style="font-size:1.5rem;">The Ledger</h1>
+      <div class="sub" style="margin-bottom:20px;">Sign in with your email to view or edit — access is limited to invited family members only.</div>
+      <input type="email" id="authEmail" placeholder="you@example.com">
+      <button class="auth-btn" onclick="sendMagicLink()">Send sign-in link</button>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+  </div>
+
+  <div id="mainContent" style="display:none;">
   <header>
     <div>
       <div class="eyebrow">Dublin · Two dossiers, one verdict</div>
       <h1>The Ledger</h1>
       <div class="sub">Every cost of buying, side by side — so the cheaper-looking one doesn't quietly win by default.</div>
     </div>
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
   </header>
 
   <div class="savebar" id="saveStatus">Loading saved entries…</div>
@@ -525,22 +562,24 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   <footer>
     Figures are working estimates, not legal or financial advice — confirm stamp duty, registration fees, and LPT banding with your solicitor before bidding. Stamp duty here is calculated at 1% up to €1.5m (standard residential rate); properties above that or bulk purchases carry different rates. "From mortgage" assumes 90% loan-to-value if no AIP amount is entered.
   </footer>
-</div>
 
-<button class="help-fab" id="helpFab" onclick="toggleHelp()">?</button>
-<div class="help-panel" id="helpPanel" style="display:none;">
-  <div class="help-header">
-    <span>Ask about this tool</span>
-    <button class="help-close" onclick="toggleHelp()">×</button>
+  <button class="help-fab" id="helpFab" onclick="toggleHelp()">?</button>
+  <div class="help-panel" id="helpPanel" style="display:none;">
+    <div class="help-header">
+      <span>Ask about this tool</span>
+      <button class="help-close" onclick="toggleHelp()">×</button>
+    </div>
+    <div class="help-log" id="helpLog">
+      <div class="help-msg help-bot">Ask me things like "how is stamp duty calculated" or "what does green mortgage mean" — I answer from a built-in FAQ, not a live AI, so answers are about how this tool works rather than open-ended questions.</div>
+    </div>
+    <div class="help-input-row">
+      <input type="text" id="helpInput" placeholder="Type a question…" onkeydown="if(event.key==='Enter') askHelp()">
+      <button onclick="askHelp()">Ask</button>
+    </div>
   </div>
-  <div class="help-log" id="helpLog">
-    <div class="help-msg help-bot">Ask me things like "how is stamp duty calculated" or "what does green mortgage mean" — I answer from a built-in FAQ, not a live AI, so answers are about how this tool works rather than open-ended questions.</div>
-  </div>
-  <div class="help-input-row">
-    <input type="text" id="helpInput" placeholder="Type a question…" onkeydown="if(event.key==='Enter') askHelp()">
-    <button onclick="askHelp()">Ask</button>
-  </div>
-</div>
+
+  </div><!-- /mainContent -->
+</div><!-- /wrap -->
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -548,6 +587,45 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
 const SUPABASE_URL = 'https://ptcfdabyiuzgylmjluic.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0Y2ZkYWJ5aXV6Z3lsbWpsdWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMDc5NDEsImV4cCI6MjA5Njg4Mzk0MX0.bdn9GIWpfRzzFPRcqTm-k1DAH-N_QpiLvsveRHtAQw4';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ---- Auth gate ----
+async function sendMagicLink(){
+  const email = document.getElementById('authEmail').value.trim();
+  const msgEl = document.getElementById('authMsg');
+  if(!email){ msgEl.textContent = 'Enter your email first.'; return; }
+  msgEl.textContent = 'Sending…';
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+  msgEl.textContent = error
+    ? 'Error: ' + error.message
+    : `Check ${email} for a sign-in link. It'll bring you straight back here, signed in.`;
+}
+
+function signOut(){
+  sb.auth.signOut().then(()=>{ window.location.reload(); });
+}
+
+function showApp(){
+  document.getElementById('authGate').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  loadSaved();
+}
+
+function showGate(){
+  document.getElementById('authGate').style.display = 'flex';
+  document.getElementById('mainContent').style.display = 'none';
+}
+
+sb.auth.onAuthStateChange((event, session)=>{
+  if(session) showApp(); else showGate();
+});
+
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session) showApp(); else showGate();
+});
+
 const ROW_ID = 'main';
 
 const criteria = [
@@ -1007,7 +1085,7 @@ fieldIds.forEach(id=>{
   if(el) el.addEventListener('input', scheduleSave);
 });
 
-loadSaved();
+// loadSaved() now runs automatically once signed in, via the auth state listener above
 </script>
 </body>
 </html>
