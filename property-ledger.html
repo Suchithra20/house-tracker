@@ -45,6 +45,14 @@ h1{font-weight:800; font-size:2rem; margin:0; letter-spacing:-0.02em;}
 .tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
 .tab-btn:hover{color:var(--ink);}
 
+.subtab-nav{display:flex; gap:6px; margin-bottom:20px;}
+.subtab-btn{
+  padding:7px 14px; border:1px solid var(--border); background:var(--card); cursor:pointer;
+  font-family:'Inter',sans-serif; font-size:0.8rem; font-weight:600; color:var(--muted); border-radius:20px;
+}
+.subtab-btn.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+.subtab-btn:hover:not(.active){border-color:var(--accent); color:var(--accent);}
+
 /* ---- Top verdict banner ---- */
 .verdict-banner{
   background:var(--ink); color:#fff; padding:32px; margin-bottom:28px; border-radius:var(--radius);
@@ -257,8 +265,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
 
   <div class="tab-nav">
     <button class="tab-btn active" id="tabBtnCompare" onclick="switchTab('compare')">Compare Properties</button>
-    <button class="tab-btn" id="tabBtnBudget" onclick="switchTab('budget')">Monthly Budget</button>
-    <button class="tab-btn" id="tabBtnSavings" onclick="switchTab('savings')">Savings</button>
+    <button class="tab-btn" id="tabBtnAfford" onclick="switchTab('afford')">How Much Can I Afford</button>
   </div>
 
   <div id="tabCompare">
@@ -523,7 +530,14 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
 
   </div><!-- /tabCompare -->
 
-  <div id="tabBudget" style="display:none;">
+  <div id="tabAfford" style="display:none;">
+
+    <div class="subtab-nav">
+      <button class="subtab-btn active" id="subTabBtnBudget" onclick="switchSubTab('budget')">Monthly Budget</button>
+      <button class="subtab-btn" id="subTabBtnSavings" onclick="switchSubTab('savings')">Savings</button>
+    </div>
+
+  <div id="tabBudget" style="display:block;">
     <div class="dossier" style="margin-bottom:20px;">
       <div class="dossier-label">Your Income</div>
       <div class="field-row">
@@ -584,6 +598,8 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       </table>
     </div>
   </div><!-- /tabSavings -->
+
+  </div><!-- /tabAfford -->
 
   <footer>
     Figures are working estimates, not legal or financial advice — confirm stamp duty, registration fees, and LPT banding with your solicitor before bidding. Stamp duty here is calculated at 1% up to €1.5m (standard residential rate); properties above that or bulk purchases carry different rates. "From mortgage" assumes 90% loan-to-value if no AIP amount is entered.
@@ -940,11 +956,16 @@ function calcBudget(a, b){
 
 function switchTab(tab){
   document.getElementById('tabCompare').style.display = tab === 'compare' ? 'block' : 'none';
-  document.getElementById('tabBudget').style.display = tab === 'budget' ? 'block' : 'none';
-  document.getElementById('tabSavings').style.display = tab === 'savings' ? 'block' : 'none';
+  document.getElementById('tabAfford').style.display = tab === 'afford' ? 'block' : 'none';
   document.getElementById('tabBtnCompare').classList.toggle('active', tab === 'compare');
-  document.getElementById('tabBtnBudget').classList.toggle('active', tab === 'budget');
-  document.getElementById('tabBtnSavings').classList.toggle('active', tab === 'savings');
+  document.getElementById('tabBtnAfford').classList.toggle('active', tab === 'afford');
+}
+
+function switchSubTab(sub){
+  document.getElementById('tabBudget').style.display = sub === 'budget' ? 'block' : 'none';
+  document.getElementById('tabSavings').style.display = sub === 'savings' ? 'block' : 'none';
+  document.getElementById('subTabBtnBudget').classList.toggle('active', sub === 'budget');
+  document.getElementById('subTabBtnSavings').classList.toggle('active', sub === 'savings');
 }
 
 // ---- Built-in FAQ helper (no live API — see chat notes on why) ----
