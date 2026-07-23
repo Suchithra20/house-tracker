@@ -258,6 +258,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   <div class="tab-nav">
     <button class="tab-btn active" id="tabBtnCompare" onclick="switchTab('compare')">Compare Properties</button>
     <button class="tab-btn" id="tabBtnBudget" onclick="switchTab('budget')">Monthly Budget</button>
+    <button class="tab-btn" id="tabBtnSavings" onclick="switchTab('savings')">Savings</button>
   </div>
 
   <div id="tabCompare">
@@ -531,20 +532,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     </div>
 
     <div class="dossier" style="margin-bottom:20px;">
-      <div class="dossier-label">Your Savings</div>
-      <div class="sub" style="margin-bottom:14px;">Add every place you're holding savings. An emergency fund of 6 months' salary is set aside automatically — only what's left over counts toward the house.</div>
-      <div id="savingsSourcesList"></div>
-      <button class="mini-btn" style="margin-top:6px; text-decoration:none; border:1px solid var(--accent); border-radius:6px; padding:5px 10px;" onclick="addSavingsSource()">+ Add source</button>
-      <input type="hidden" id="savings_sources_data" value="">
-
-      <table class="costs" style="margin-top:16px;">
-        <tr><td>Total across all sources</td><td class="amt" id="savingsTotal">—</td></tr>
-        <tr><td>Emergency fund reserved (6 × monthly salary)</td><td class="amt" id="savingsEmergency">—</td></tr>
-        <tr class="total"><td>Usable toward a house</td><td class="amt" id="savingsUsable">—</td></tr>
-      </table>
-    </div>
-
-    <div class="dossier" style="margin-bottom:20px;">
       <div class="dossier-label">Other Monthly Spending</div>
       <div class="sub" style="margin-bottom:14px;">Everything outside the property costs — those get pulled in automatically below.</div>
       <table class="costs">
@@ -580,7 +567,23 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       </div>
       <div class="verdict-reason" id="budgetReason" style="margin-top:16px;"></div>
     </div>
-  </div>
+  </div><!-- /tabBudget -->
+
+  <div id="tabSavings" style="display:none;">
+    <div class="dossier" style="margin-bottom:20px;">
+      <div class="dossier-label">Your Savings</div>
+      <div class="sub" style="margin-bottom:14px;">Add every place you're holding savings. An emergency fund of 6 months' salary is set aside automatically — only what's left over counts toward the house.</div>
+      <div id="savingsSourcesList"></div>
+      <button class="mini-btn" style="margin-top:6px; text-decoration:none; border:1px solid var(--accent); border-radius:6px; padding:5px 10px;" onclick="addSavingsSource()">+ Add source</button>
+      <input type="hidden" id="savings_sources_data" value="">
+
+      <table class="costs" style="margin-top:16px;">
+        <tr><td>Total across all sources</td><td class="amt" id="savingsTotal">—</td></tr>
+        <tr><td>Emergency fund reserved (6 × monthly salary)</td><td class="amt" id="savingsEmergency">—</td></tr>
+        <tr class="total"><td>Usable toward a house</td><td class="amt" id="savingsUsable">—</td></tr>
+      </table>
+    </div>
+  </div><!-- /tabSavings -->
 
   <footer>
     Figures are working estimates, not legal or financial advice — confirm stamp duty, registration fees, and LPT banding with your solicitor before bidding. Stamp duty here is calculated at 1% up to €1.5m (standard residential rate); properties above that or bulk purchases carry different rates. "From mortgage" assumes 90% loan-to-value if no AIP amount is entered.
@@ -938,8 +941,10 @@ function calcBudget(a, b){
 function switchTab(tab){
   document.getElementById('tabCompare').style.display = tab === 'compare' ? 'block' : 'none';
   document.getElementById('tabBudget').style.display = tab === 'budget' ? 'block' : 'none';
+  document.getElementById('tabSavings').style.display = tab === 'savings' ? 'block' : 'none';
   document.getElementById('tabBtnCompare').classList.toggle('active', tab === 'compare');
   document.getElementById('tabBtnBudget').classList.toggle('active', tab === 'budget');
+  document.getElementById('tabBtnSavings').classList.toggle('active', tab === 'savings');
 }
 
 // ---- Built-in FAQ helper (no live API — see chat notes on why) ----
