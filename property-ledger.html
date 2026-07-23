@@ -231,7 +231,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       </div>
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="a_asking" value="310000"></div>
-        <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="310000"></div>
+        <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="280000"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
@@ -245,7 +245,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Comparable sale (address, price, date)</label><input type="text" id="a_comp" value="52 The Gallery — sold 5 weeks prior"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>BER Rating</label><input type="text" id="a_ber" value=""></div>
+        <div class="field"><label>BER Rating</label><input type="text" id="a_ber" value="B3"></div>
         <div class="field"><label>Commute (mins)</label><input type="number" id="a_commute" value=""></div>
       </div>
 
@@ -277,6 +277,8 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="section-title">Ongoing annual costs</div>
       <table class="costs">
         <tr><td>Mortgage rate (%)</td><td class="amt"><input type="number" id="a_rate" value="3.9" step="0.1"></td></tr>
+        <tr><td><label style="display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--ink); text-transform:none; font-weight:400;"><input type="checkbox" id="a_green" checked style="width:auto;"> Green mortgage rate applies (BER B3+)</label></td><td class="amt"><input type="number" id="a_greendisc" value="0.2" step="0.05" title="Discount %"></td></tr>
+        <tr class="computed"><td>Effective rate used</td><td class="amt" id="a_effrate">—</td></tr>
         <tr><td>Term (years)</td><td class="amt"><input type="number" id="a_term" value="30"></td></tr>
         <tr><td>Est. monthly mortgage repayment</td><td class="amt" id="a_monthly">—</td></tr>
         <tr><td>Local Property Tax (annual)</td><td class="amt"><input type="number" id="a_lpt" value=""></td></tr>
@@ -331,7 +333,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Comparable sale (address, price, date)</label><input type="text" id="b_comp" value=""></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>BER Rating</label><input type="text" id="b_ber" value=""></div>
+        <div class="field"><label>BER Rating</label><input type="text" id="b_ber" value="C1"></div>
         <div class="field"><label>Commute (mins)</label><input type="number" id="b_commute" value=""></div>
       </div>
 
@@ -363,6 +365,8 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="section-title">Ongoing annual costs</div>
       <table class="costs">
         <tr><td>Mortgage rate (%)</td><td class="amt"><input type="number" id="b_rate" value="3.9" step="0.1"></td></tr>
+        <tr><td><label style="display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--ink); text-transform:none; font-weight:400;"><input type="checkbox" id="b_green" style="width:auto;"> Green mortgage rate applies (BER B3+)</label></td><td class="amt"><input type="number" id="b_greendisc" value="0.2" step="0.05" title="Discount %"></td></tr>
+        <tr class="computed"><td>Effective rate used</td><td class="amt" id="b_effrate">—</td></tr>
         <tr><td>Term (years)</td><td class="amt"><input type="number" id="b_term" value="30"></td></tr>
         <tr><td>Est. monthly mortgage repayment</td><td class="amt" id="b_monthly">—</td></tr>
         <tr><td>Local Property Tax (annual)</td><td class="amt"><input type="number" id="b_lpt" value=""></td></tr>
@@ -546,7 +550,13 @@ function calcSide(p){
   document.getElementById(`${p}_total`).textContent = fmt(total);
   document.getElementById(`${p}_savings_highlight`).textContent = fmt(total);
 
-  const rate = num(`${p}_rate`)/100/12;
+  const baseRate = num(`${p}_rate`);
+  const greenChecked = document.getElementById(`${p}_green`).checked;
+  const greenDisc = num(`${p}_greendisc`);
+  const effRate = greenChecked ? Math.max(0, baseRate - greenDisc) : baseRate;
+  document.getElementById(`${p}_effrate`).textContent = effRate.toFixed(2) + '%' + (greenChecked ? ' (green)' : '');
+
+  const rate = effRate/100/12;
   const n = num(`${p}_term`)*12;
   let monthly = 0;
   if(loanUsed>0 && rate>0 && n>0){
@@ -803,10 +813,10 @@ function applyFurnishBudget(p){
 const fieldIds = [
   'a_name','a_addr','a_asking','a_bid','a_mortgage','a_savings','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
   'a_legal','a_survey','a_reg','a_bankfee','a_move','a_repairs','a_furnish',
-  'a_rate','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
+  'a_rate','a_green','a_greendisc','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
   'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
-  'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
+  'b_rate','b_green','b_greendisc','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
   'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other'
 ];
 criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
@@ -815,7 +825,8 @@ function gatherData(){
   const data = {};
   fieldIds.forEach(id=>{
     const el = document.getElementById(id);
-    if(el) data[id] = el.value;
+    if(!el) return;
+    data[id] = el.type === 'checkbox' ? (el.checked ? '1' : '') : el.value;
   });
   return data;
 }
@@ -823,7 +834,9 @@ function gatherData(){
 function applyData(data){
   Object.keys(data).forEach(id=>{
     const el = document.getElementById(id);
-    if(el) el.value = data[id];
+    if(!el) return;
+    if(el.type === 'checkbox') el.checked = !!data[id];
+    else el.value = data[id];
   });
   criteria.forEach(c=>{
     const w = document.getElementById(`w_${c.key}`);
@@ -874,7 +887,7 @@ async function loadSaved(){
 
 // Wire up recalculation
 ['a','b'].forEach(p=>{
-  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
+  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','green','greendisc','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
