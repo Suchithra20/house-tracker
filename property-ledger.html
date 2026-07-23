@@ -364,7 +364,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="280000"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
+        <div class="field"><label>Savings available € <span style="font-weight:400; text-transform:none; color:var(--faint);">(auto from Savings tab)</span></label><input type="number" id="a_savings" value="" readonly style="background:var(--bg); color:var(--muted);"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="a_size" value=""></div>
@@ -464,7 +464,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Your Offer €</label><input type="number" id="b_bid" value="0"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
+        <div class="field"><label>Savings available € <span style="font-weight:400; text-transform:none; color:var(--faint);">(auto from Savings tab)</span></label><input type="number" id="b_savings" value="" readonly style="background:var(--bg); color:var(--muted);"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="b_size" value=""></div>
@@ -997,6 +997,10 @@ function renderMedia(p){
 
 let lastA = {totalMonthly:0}, lastB = {totalMonthly:0};
 function recalc(){
+  const savingsSummary = calcSavingsSummary();
+  document.getElementById('a_savings').value = savingsSummary.usable || 0;
+  document.getElementById('b_savings').value = savingsSummary.usable || 0;
+
   const a = calcSide('a');
   const b = calcSide('b');
   lastA = a; lastB = b;
@@ -1192,7 +1196,6 @@ function calcBudget(a, b){
   calcOverpayment('a', a);
   calcOverpayment('b', b);
   const salary = num('bud_salary');
-  calcSavingsSummary();
   const other = num('bud_groceries') + num('bud_transport') + num('bud_utilities') + num('bud_subs') +
                 num('bud_cosmetics') + num('bud_leisure') + num('bud_savings_contrib') + num('bud_other');
   document.getElementById('bud_other_total').textContent = other ? fmt(other) : '—';
