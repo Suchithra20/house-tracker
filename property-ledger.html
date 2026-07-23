@@ -36,6 +36,15 @@ h1{font-weight:800; font-size:2rem; margin:0; letter-spacing:-0.02em;}
 
 .savebar{font-size:0.78rem; color:var(--faint); text-align:right; margin-bottom:16px;}
 
+.tab-nav{display:flex; gap:8px; margin-bottom:24px; border-bottom:1px solid var(--border);}
+.tab-btn{
+  padding:10px 18px; border:none; background:none; cursor:pointer;
+  font-family:'Inter',sans-serif; font-size:0.88rem; font-weight:600; color:var(--muted);
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
+.tab-btn:hover{color:var(--ink);}
+
 /* ---- Top verdict banner ---- */
 .verdict-banner{
   background:var(--ink); color:#fff; padding:32px; margin-bottom:28px; border-radius:var(--radius);
@@ -169,6 +178,13 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   </header>
 
   <div class="savebar" id="saveStatus">Loading saved entries…</div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabBtnCompare" onclick="switchTab('compare')">Compare Properties</button>
+    <button class="tab-btn" id="tabBtnBudget" onclick="switchTab('budget')">Monthly Budget</button>
+  </div>
+
+  <div id="tabCompare">
 
   <!-- LIVE VERDICT BANNER -->
   <div class="verdict-banner">
@@ -418,6 +434,53 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     </div>
   </div>
 
+  </div><!-- /tabCompare -->
+
+  <div id="tabBudget" style="display:none;">
+    <div class="dossier" style="margin-bottom:20px;">
+      <div class="dossier-label">Your Income</div>
+      <div class="field-row">
+        <div class="field"><label>Monthly take-home salary €</label><input type="number" id="bud_salary" value=""></div>
+      </div>
+    </div>
+
+    <div class="dossier" style="margin-bottom:20px;">
+      <div class="dossier-label">Other Monthly Spending</div>
+      <div class="sub" style="margin-bottom:14px;">Everything outside the property costs — those get pulled in automatically below.</div>
+      <table class="costs">
+        <tr><td>Groceries</td><td class="amt"><input type="number" id="bud_groceries" value=""></td></tr>
+        <tr><td>Transport / fuel</td><td class="amt"><input type="number" id="bud_transport" value=""></td></tr>
+        <tr><td>Phone, internet & subscriptions</td><td class="amt"><input type="number" id="bud_subs" value=""></td></tr>
+        <tr><td>Health / life insurance</td><td class="amt"><input type="number" id="bud_healthins" value=""></td></tr>
+        <tr><td>Personal & leisure</td><td class="amt"><input type="number" id="bud_leisure" value=""></td></tr>
+        <tr><td>Savings / investments</td><td class="amt"><input type="number" id="bud_savings_contrib" value=""></td></tr>
+        <tr><td>Other recurring costs</td><td class="amt"><input type="number" id="bud_other" value=""></td></tr>
+        <tr class="total"><td>Total other spending</td><td class="amt" id="bud_other_total">—</td></tr>
+      </table>
+    </div>
+
+    <div class="verdict-banner">
+      <div class="eyebrow2">What's left each month</div>
+      <div class="verdict-grid" id="budgetGrid">
+        <div class="vg-card">
+          <div class="vg-label" id="budA_name">Property A</div>
+          <div class="vg-row"><span>Take-home income</span><span id="budA_income">—</span></div>
+          <div class="vg-row"><span>Housing costs</span><span id="budA_housing">—</span></div>
+          <div class="vg-row"><span>Other spending</span><span id="budA_other">—</span></div>
+          <div class="vg-row win" id="budA_left"><span>Left over</span><span>—</span></div>
+        </div>
+        <div class="vg-card">
+          <div class="vg-label" id="budB_name">Property B</div>
+          <div class="vg-row"><span>Take-home income</span><span id="budB_income">—</span></div>
+          <div class="vg-row"><span>Housing costs</span><span id="budB_housing">—</span></div>
+          <div class="vg-row"><span>Other spending</span><span id="budB_other">—</span></div>
+          <div class="vg-row win" id="budB_left"><span>Left over</span><span>—</span></div>
+        </div>
+      </div>
+      <div class="verdict-reason" id="budgetReason" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
   <footer>
     Figures are working estimates, not legal or financial advice — confirm stamp duty, registration fees, and LPT banding with your solicitor before bidding. Stamp duty here is calculated at 1% up to €1.5m (standard residential rate); properties above that or bulk purchases carry different rates. "From mortgage" assumes 90% loan-to-value if no AIP amount is entered.
   </footer>
@@ -614,7 +677,58 @@ function recalc(){
   renderVerdictTop(a, b);
   renderMedia('a');
   renderMedia('b');
+  calcBudget(a, b);
   return {a,b};
+}
+
+function calcBudget(a, b){
+  const salary = num('bud_salary');
+  const other = num('bud_groceries') + num('bud_transport') + num('bud_subs') +
+                num('bud_healthins') + num('bud_leisure') + num('bud_savings_contrib') + num('bud_other');
+  document.getElementById('bud_other_total').textContent = other ? fmt(other) : '—';
+
+  const nameA = document.getElementById('a_name').value || 'Property A';
+  const nameB = document.getElementById('b_name').value || 'Property B';
+  document.getElementById('budA_name').textContent = nameA;
+  document.getElementById('budB_name').textContent = nameB;
+
+  [['a', a], ['b', b]].forEach(([p, side])=>{
+    const income = document.getElementById(`bud${p.toUpperCase()}_income`);
+    const housing = document.getElementById(`bud${p.toUpperCase()}_housing`);
+    const otherEl = document.getElementById(`bud${p.toUpperCase()}_other`);
+    const leftEl = document.getElementById(`bud${p.toUpperCase()}_left`);
+    income.textContent = salary ? fmt(salary) : '—';
+    housing.textContent = side.totalMonthly ? fmt(side.totalMonthly) : '—';
+    otherEl.textContent = other ? fmt(other) : '—';
+    const left = salary - (side.totalMonthly||0) - other;
+    leftEl.querySelector('span:last-child').textContent = salary ? fmt(left) : '—';
+    leftEl.classList.toggle('win', left >= 0 && salary>0);
+  });
+
+  const reasonEl = document.getElementById('budgetReason');
+  if(!salary){
+    reasonEl.textContent = 'Add your monthly take-home salary above to see what you would have left under each property.';
+    return;
+  }
+  const leftA = salary - (a.totalMonthly||0) - other;
+  const leftB = salary - (b.totalMonthly||0) - other;
+  const pctA = salary ? (leftA/salary*100) : 0;
+  const pctB = salary ? (leftB/salary*100) : 0;
+  const describe = (pct)=>{
+    if(pct < 0) return 'a monthly deficit — costs exceed income as entered';
+    if(pct < 10) return 'very tight, little room for anything beyond essentials';
+    if(pct < 25) return 'workable, but limited room for extras or saving';
+    if(pct < 40) return 'comfortable, with real room for saving and lifestyle spend';
+    return 'a large buffer — well within your means';
+  };
+  reasonEl.innerHTML = `${nameA}: ${fmt(leftA)}/mo left (${pctA.toFixed(0)}% of income) — ${describe(pctA)}.<br>${nameB}: ${fmt(leftB)}/mo left (${pctB.toFixed(0)}% of income) — ${describe(pctB)}.`;
+}
+
+function switchTab(tab){
+  document.getElementById('tabCompare').style.display = tab === 'compare' ? 'block' : 'none';
+  document.getElementById('tabBudget').style.display = tab === 'budget' ? 'block' : 'none';
+  document.getElementById('tabBtnCompare').classList.toggle('active', tab === 'compare');
+  document.getElementById('tabBtnBudget').classList.toggle('active', tab === 'budget');
 }
 
 // AI-researched scores, grounded in Property Price Register, Daft, and Fingal transport planning data
@@ -691,7 +805,8 @@ const fieldIds = [
   'a_rate','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
   'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
-  'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes'
+  'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
+  'bud_salary','bud_groceries','bud_transport','bud_subs','bud_healthins','bud_leisure','bud_savings_contrib','bud_other'
 ];
 criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
 
@@ -758,7 +873,7 @@ async function loadSaved(){
 
 // Wire up recalculation
 ['a','b'].forEach(p=>{
-  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','furnish','rate','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
+  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
@@ -766,6 +881,10 @@ async function loadSaved(){
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
+});
+['bud_salary','bud_groceries','bud_transport','bud_subs','bud_healthins','bud_leisure','bud_savings_contrib','bud_other'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', recalc);
 });
 criteria.forEach(c=>{
   document.getElementById(`w_${c.key}`).addEventListener('input', e=>{
