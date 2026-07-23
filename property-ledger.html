@@ -286,7 +286,7 @@ footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid v
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://ptcfdabyiuzgylmjluic.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_rkZSjbF2pHWctDF_ThQREw_j1UT2Ty1';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0Y2ZkYWJ5aXV6Z3lsbWpsdWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMDc5NDEsImV4cCI6MjA5Njg4Mzk0MX0.bdn9GIWpfRzzFPRcqTm-k1DAH-N_QpiLvsveRHtAQw4';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ROW_ID = 'main';
 const criteria = [
@@ -380,7 +380,7 @@ async function loadSaved(){
     }
   }catch(e){
     console.error('Supabase load error:', e);
-    status.textContent = 'Could not reach the database — starting fresh.';
+    status.textContent = 'DB error: ' + (e.message || JSON.stringify(e));
   }
   criteria.forEach(c=>{
     const w = document.getElementById(`w_${c.key}`);
