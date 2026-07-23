@@ -609,6 +609,42 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <tr class="total"><td>Usable toward a house</td><td class="amt" id="savingsUsable">—</td></tr>
       </table>
     </div>
+
+    <div class="dossier" style="margin-bottom:20px;">
+      <div class="dossier-label">Overpayment Potential</div>
+      <div class="sub" style="margin-bottom:14px;">Test paying extra each month beyond the standard repayment, and see how much time and interest it saves on each property. Most Irish lenders cap penalty-free overpayment at 10% of the outstanding balance per year on fixed rates — variable rate mortgages are usually unlimited. Check your specific terms before committing.</div>
+
+      <div class="cols">
+        <div>
+          <div class="dossier-label" style="margin-bottom:10px;">Property A</div>
+          <div class="field-row">
+            <div class="field"><label>Extra monthly overpayment €</label><input type="number" id="a_overpay" value="0"></div>
+          </div>
+          <table class="costs">
+            <tr><td>Standard monthly repayment</td><td class="amt" id="a_op_standard">—</td></tr>
+            <tr><td>Standard payoff time</td><td class="amt" id="a_op_stdterm">—</td></tr>
+            <tr><td>Total interest (standard)</td><td class="amt" id="a_op_stdinterest">—</td></tr>
+            <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="a_op_newterm">—</td></tr>
+            <tr class="computed"><td>Time saved</td><td class="amt" id="a_op_timesaved">—</td></tr>
+            <tr class="total"><td>Interest saved</td><td class="amt" id="a_op_interestsaved">—</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="dossier-label" style="margin-bottom:10px;">Property B</div>
+          <div class="field-row">
+            <div class="field"><label>Extra monthly overpayment €</label><input type="number" id="b_overpay" value="0"></div>
+          </div>
+          <table class="costs">
+            <tr><td>Standard monthly repayment</td><td class="amt" id="b_op_standard">—</td></tr>
+            <tr><td>Standard payoff time</td><td class="amt" id="b_op_stdterm">—</td></tr>
+            <tr><td>Total interest (standard)</td><td class="amt" id="b_op_stdinterest">—</td></tr>
+            <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="b_op_newterm">—</td></tr>
+            <tr class="computed"><td>Time saved</td><td class="amt" id="b_op_timesaved">—</td></tr>
+            <tr class="total"><td>Interest saved</td><td class="amt" id="b_op_interestsaved">—</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
   </div><!-- /tabSavings -->
 
   </div><!-- /tabAfford -->
@@ -765,7 +801,7 @@ function calcSide(p){
   const affordEl = document.getElementById(`${p}_afford`);
   if(affordEl) affordEl.innerHTML = affordText;
 
-  return {price, total, monthly, totalMonthly, lpt, mgmt, ins, mpi};
+  return {price, total, monthly, totalMonthly, lpt, mgmt, ins, mpi, loanUsed, effRate, termYears: num(`${p}_term`)};
 }
 
 function weightedScore(p){
@@ -930,7 +966,60 @@ function calcSavingsSummary(){
   return {total, emergency, future, usable};
 }
 
+// ---- Overpayment potential ----
+function amortize(loan, annualRatePct, monthlyPayment){
+  const monthlyRate = annualRatePct/100/12;
+  let balance = loan;
+  let months = 0;
+  let totalInterest = 0;
+  const cap = 720; // 60 years safety cap
+  while(balance > 0.5 && months < cap){
+    const interest = balance * monthlyRate;
+    let principal = monthlyPayment - interest;
+    if(principal <= 0){ months = Infinity; break; }
+    if(principal > balance) principal = balance;
+    balance -= principal;
+    totalInterest += interest;
+    months++;
+  }
+  return {months, totalInterest};
+}
+
+function fmtYearsMonths(totalMonths){
+  if(!isFinite(totalMonths)) return 'Never — payment too low';
+  const y = Math.floor(totalMonths/12), m = totalMonths%12;
+  return `${y}y${m ? ' ' + m + 'm' : ''}`;
+}
+
+function calcOverpayment(p, side){
+  if(!side.loanUsed || !side.monthly || !side.termYears) {
+    ['standard','stdterm','stdinterest','newterm','timesaved','interestsaved'].forEach(k=>{
+      document.getElementById(`${p}_op_${k}`).textContent = '—';
+    });
+    return;
+  }
+  const stdMonths = side.termYears*12;
+  const stdInterest = (side.monthly*stdMonths) - side.loanUsed;
+  document.getElementById(`${p}_op_standard`).textContent = fmt(side.monthly);
+  document.getElementById(`${p}_op_stdterm`).textContent = fmtYearsMonths(stdMonths);
+  document.getElementById(`${p}_op_stdinterest`).textContent = fmt(stdInterest);
+
+  const extra = num(`${p}_overpay`);
+  if(extra <= 0){
+    document.getElementById(`${p}_op_newterm`).textContent = '—';
+    document.getElementById(`${p}_op_timesaved`).textContent = '—';
+    document.getElementById(`${p}_op_interestsaved`).textContent = '—';
+    return;
+  }
+  const withOver = amortize(side.loanUsed, side.effRate, side.monthly + extra);
+  document.getElementById(`${p}_op_newterm`).textContent = fmtYearsMonths(withOver.months);
+  document.getElementById(`${p}_op_timesaved`).textContent = isFinite(withOver.months) ? fmtYearsMonths(stdMonths - withOver.months) : '—';
+  document.getElementById(`${p}_op_interestsaved`).textContent = isFinite(withOver.months) ? fmt(stdInterest - withOver.totalInterest) : '—';
+}
+
 function calcBudget(a, b){
+  calcOverpayment('a', a);
+  calcOverpayment('b', b);
   const salary = num('bud_salary');
   calcSavingsSummary();
   const other = num('bud_groceries') + num('bud_transport') + num('bud_utilities') + num('bud_subs') +
@@ -1102,7 +1191,7 @@ const fieldIds = [
   'b_name','b_addr','b_asking','b_bid','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_green','b_greendisc','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
-  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data'
+  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay'
 ];
 criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
 
@@ -1191,7 +1280,7 @@ document.getElementById('g_mortgage').addEventListener('input', recalc);
     if(el) el.addEventListener('input', recalc);
   });
 });
-['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data'].forEach(id=>{
+['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('input', recalc);
 });
