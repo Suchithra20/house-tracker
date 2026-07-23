@@ -450,6 +450,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <table class="costs">
         <tr><td>Groceries</td><td class="amt"><input type="number" id="bud_groceries" value=""></td></tr>
         <tr><td>Transport / fuel</td><td class="amt"><input type="number" id="bud_transport" value=""></td></tr>
+        <tr><td>Utilities — electricity, gas, bins</td><td class="amt"><input type="number" id="bud_utilities" value=""></td></tr>
         <tr><td>Phone, internet & subscriptions</td><td class="amt"><input type="number" id="bud_subs" value=""></td></tr>
         <tr><td>Health / life insurance</td><td class="amt"><input type="number" id="bud_healthins" value=""></td></tr>
         <tr><td>Personal & leisure</td><td class="amt"><input type="number" id="bud_leisure" value=""></td></tr>
@@ -683,7 +684,7 @@ function recalc(){
 
 function calcBudget(a, b){
   const salary = num('bud_salary');
-  const other = num('bud_groceries') + num('bud_transport') + num('bud_subs') +
+  const other = num('bud_groceries') + num('bud_transport') + num('bud_utilities') + num('bud_subs') +
                 num('bud_healthins') + num('bud_leisure') + num('bud_savings_contrib') + num('bud_other');
   document.getElementById('bud_other_total').textContent = other ? fmt(other) : '—';
 
@@ -806,7 +807,7 @@ const fieldIds = [
   'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
-  'bud_salary','bud_groceries','bud_transport','bud_subs','bud_healthins','bud_leisure','bud_savings_contrib','bud_other'
+  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_healthins','bud_leisure','bud_savings_contrib','bud_other'
 ];
 criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
 
@@ -882,7 +883,7 @@ async function loadSaved(){
     if(el) el.addEventListener('input', recalc);
   });
 });
-['bud_salary','bud_groceries','bud_transport','bud_subs','bud_healthins','bud_leisure','bud_savings_contrib','bud_other'].forEach(id=>{
+['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_healthins','bud_leisure','bud_savings_contrib','bud_other'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('input', recalc);
 });
