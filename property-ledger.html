@@ -203,7 +203,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   max-width:360px; width:100%; background:var(--card); border:1px solid var(--border);
   border-radius:var(--radius); padding:32px; text-align:left;
 }
-.auth-box input[type=email]{
+.auth-box input[type=email], .auth-box input[type=password]{
   width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
   font-family:'Inter',sans-serif; font-size:0.9rem; margin-bottom:12px;
 }
@@ -227,9 +227,10 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     <div class="auth-box">
       <div class="eyebrow">Family access only</div>
       <h1 style="font-size:1.5rem;">The Ledger</h1>
-      <div class="sub" style="margin-bottom:20px;">Sign in with your email to view or edit — access is limited to invited family members only.</div>
-      <input type="email" id="authEmail" placeholder="you@example.com">
-      <button class="auth-btn" onclick="sendMagicLink()">Send sign-in link</button>
+      <div class="sub" style="margin-bottom:20px;">Sign in with the email and password you were given — access is limited to invited family members only.</div>
+      <input type="email" id="authEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter') signInWithPassword()">
+      <input type="password" id="authPassword" placeholder="Password" style="margin-top:-4px;" onkeydown="if(event.key==='Enter') signInWithPassword()">
+      <button class="auth-btn" onclick="signInWithPassword()">Sign in</button>
       <div class="auth-msg" id="authMsg"></div>
     </div>
   </div>
@@ -589,18 +590,14 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ---- Auth gate ----
-async function sendMagicLink(){
+async function signInWithPassword(){
   const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
   const msgEl = document.getElementById('authMsg');
-  if(!email){ msgEl.textContent = 'Enter your email first.'; return; }
-  msgEl.textContent = 'Sending…';
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
-  });
-  msgEl.textContent = error
-    ? 'Error: ' + error.message
-    : `Check ${email} for a sign-in link. It'll bring you straight back here, signed in.`;
+  if(!email || !password){ msgEl.textContent = 'Enter both email and password.'; return; }
+  msgEl.textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  msgEl.textContent = error ? 'Error: ' + error.message : '';
 }
 
 function signOut(){
