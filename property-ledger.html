@@ -87,6 +87,17 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 
 .afford-note{font-size:0.82rem; margin-top:10px; color:var(--muted); font-variant-numeric:tabular-nums;}
 
+.fund-box{
+  background:var(--accent-soft); border:1px solid #C7CCF5; border-radius:10px; padding:18px; margin-bottom:20px;
+}
+.fund-box-title{font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:12px;}
+.fund-box .field-row{margin-bottom:12px;}
+.fund-box input[type=number]{background:#fff;}
+.fund-box-results{border-top:1px solid #C7CCF5; padding-top:10px;}
+.fr-row{display:flex; justify-content:space-between; font-size:0.85rem; padding:3px 0; font-variant-numeric:tabular-nums; color:var(--ink);}
+.fr-row.total{font-weight:700; border-top:1px solid #C7CCF5; margin-top:6px; padding-top:8px; font-size:0.92rem;}
+.fr-afford{font-size:0.8rem; margin-top:8px; color:var(--muted); font-variant-numeric:tabular-nums;}
+
 .daft-btn{
   display:inline-block; white-space:nowrap; padding:8px 14px; border-radius:8px;
   background:var(--accent); color:#fff; font-size:0.82rem; font-weight:600; text-decoration:none;
@@ -153,6 +164,21 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     <!-- PROPERTY A -->
     <div class="dossier">
       <div class="dossier-label">Property A</div>
+
+      <div class="fund-box">
+        <div class="fund-box-title">Fund Calculation</div>
+        <div class="field-row">
+          <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
+          <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
+        </div>
+        <div class="fund-box-results">
+          <div class="fr-row"><span>From mortgage</span><span class="amt" id="a_loanused">—</span></div>
+          <div class="fr-row"><span>From savings (price gap)</span><span class="amt" id="a_pricegap">—</span></div>
+          <div class="fr-row total"><span>Total cash needed</span><span class="amt" id="a_total_top">—</span></div>
+          <div class="fr-afford" id="a_afford_top"></div>
+        </div>
+      </div>
+
       <div class="field-row">
         <div class="field"><label>Nickname</label><input type="text" id="a_name" value="Apt 19, The Gallery, Donabate"></div>
       </div>
@@ -162,10 +188,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="a_asking" value="310000"></div>
         <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="310000"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
-        <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="a_size" value=""></div>
@@ -192,8 +214,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="section-title">Once-off buying costs</div>
       <table class="costs">
         <tr><td>Offer price</td><td class="amt" id="a_price_disp">—</td></tr>
-        <tr class="computed"><td>— from mortgage</td><td class="amt" id="a_loanused">—</td></tr>
-        <tr class="computed"><td>— from savings (price gap)</td><td class="amt" id="a_pricegap">—</td></tr>
         <tr><td>Stamp duty (auto)</td><td class="amt" id="a_stamp">—</td></tr>
         <tr><td>Legal / solicitor fees</td><td class="amt"><input type="number" id="a_legal" value="2500"></td></tr>
         <tr><td>Structural survey</td><td class="amt"><input type="number" id="a_survey" value="450"></td></tr>
@@ -222,6 +242,21 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     <!-- PROPERTY B -->
     <div class="dossier">
       <div class="dossier-label">Property B</div>
+
+      <div class="fund-box">
+        <div class="fund-box-title">Fund Calculation</div>
+        <div class="field-row">
+          <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="b_mortgage" value=""></div>
+          <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
+        </div>
+        <div class="fund-box-results">
+          <div class="fr-row"><span>From mortgage</span><span class="amt" id="b_loanused">—</span></div>
+          <div class="fr-row"><span>From savings (price gap)</span><span class="amt" id="b_pricegap">—</span></div>
+          <div class="fr-row total"><span>Total cash needed</span><span class="amt" id="b_total_top">—</span></div>
+          <div class="fr-afford" id="b_afford_top"></div>
+        </div>
+      </div>
+
       <div class="field-row">
         <div class="field"><label>Nickname</label><input type="text" id="b_name" value="Property B"></div>
       </div>
@@ -231,10 +266,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="b_asking" value="0"></div>
         <div class="field"><label>Your Offer €</label><input type="number" id="b_bid" value="0"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="b_mortgage" value=""></div>
-        <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="b_size" value=""></div>
@@ -261,8 +292,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="section-title">Once-off buying costs</div>
       <table class="costs">
         <tr><td>Offer price</td><td class="amt" id="b_price_disp">—</td></tr>
-        <tr class="computed"><td>— from mortgage</td><td class="amt" id="b_loanused">—</td></tr>
-        <tr class="computed"><td>— from savings (price gap)</td><td class="amt" id="b_pricegap">—</td></tr>
         <tr><td>Stamp duty (auto)</td><td class="amt" id="b_stamp">—</td></tr>
         <tr><td>Legal / solicitor fees</td><td class="amt"><input type="number" id="b_legal" value="2500"></td></tr>
         <tr><td>Structural survey</td><td class="amt"><input type="number" id="b_survey" value="450"></td></tr>
@@ -361,6 +390,8 @@ function calcSide(p){
         bankfee = num(`${p}_bankfee`), move = num(`${p}_move`), furnish = num(`${p}_furnish`);
   const total = priceGap + stamp + legal + survey + reg + bankfee + move + furnish;
   document.getElementById(`${p}_total`).textContent = fmt(total);
+  const totalTopEl = document.getElementById(`${p}_total_top`);
+  if(totalTopEl) totalTopEl.textContent = fmt(total);
 
   const rate = num(`${p}_rate`)/100/12;
   const n = num(`${p}_term`)*12;
@@ -373,17 +404,17 @@ function calcSide(p){
   const lpt = num(`${p}_lpt`), mgmt = num(`${p}_mgmt`), ins = num(`${p}_ins`), mpi = num(`${p}_mpi`);
 
   const savings = num(`${p}_savings`);
+  const affordText = (()=>{
+    if(savings<=0) return '';
+    const cashShort = total - savings;
+    return cashShort>0
+      ? `Cash needed exceeds savings by ${fmt(cashShort)}`
+      : `Cash needed covered — ${fmt(savings-total)} savings left over`;
+  })();
   const affordEl = document.getElementById(`${p}_afford`);
-  if(affordEl){
-    if(savings>0){
-      const cashShort = total - savings;
-      affordEl.innerHTML = cashShort>0
-        ? `Cash needed exceeds savings by ${fmt(cashShort)}`
-        : `Cash needed covered — ${fmt(savings-total)} savings left over`;
-    } else {
-      affordEl.innerHTML = '';
-    }
-  }
+  if(affordEl) affordEl.innerHTML = affordText;
+  const affordTopEl = document.getElementById(`${p}_afford_top`);
+  if(affordTopEl) affordTopEl.innerHTML = affordText;
 
   const totalMonthly = monthly + (lpt+mgmt+ins+mpi)/12;
   return {price, total, monthly, totalMonthly, lpt, mgmt, ins, mpi};
