@@ -243,6 +243,16 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="a_ins" value=""></td></tr>
         <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="a_mpi" value=""></td></tr>
       </table>
+
+      <div class="section-title">Monthly costs</div>
+      <table class="costs">
+        <tr><td>Mortgage repayment</td><td class="amt" id="a_m_mortgage">—</td></tr>
+        <tr><td>Local Property Tax</td><td class="amt" id="a_m_lpt">—</td></tr>
+        <tr><td>Management / service charge</td><td class="amt" id="a_m_mgmt">—</td></tr>
+        <tr><td>Home insurance</td><td class="amt" id="a_m_ins">—</td></tr>
+        <tr><td>Mortgage protection insurance</td><td class="amt" id="a_m_mpi">—</td></tr>
+        <tr class="total"><td>Total monthly outgoings</td><td class="amt" id="a_m_total">—</td></tr>
+      </table>
       <div class="afford-note" id="a_afford"></div>
 
       <div class="note"><label>Pros / cons notes</label><textarea id="a_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
@@ -316,6 +326,16 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <tr><td>Management / service charge (annual)</td><td class="amt"><input type="number" id="b_mgmt" value=""></td></tr>
         <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="b_ins" value=""></td></tr>
         <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="b_mpi" value=""></td></tr>
+      </table>
+
+      <div class="section-title">Monthly costs</div>
+      <table class="costs">
+        <tr><td>Mortgage repayment</td><td class="amt" id="b_m_mortgage">—</td></tr>
+        <tr><td>Local Property Tax</td><td class="amt" id="b_m_lpt">—</td></tr>
+        <tr><td>Management / service charge</td><td class="amt" id="b_m_mgmt">—</td></tr>
+        <tr><td>Home insurance</td><td class="amt" id="b_m_ins">—</td></tr>
+        <tr><td>Mortgage protection insurance</td><td class="amt" id="b_m_mpi">—</td></tr>
+        <tr class="total"><td>Total monthly outgoings</td><td class="amt" id="b_m_total">—</td></tr>
       </table>
       <div class="afford-note" id="b_afford"></div>
 
@@ -421,6 +441,14 @@ function calcSide(p){
 
   const lpt = num(`${p}_lpt`), mgmt = num(`${p}_mgmt`), ins = num(`${p}_ins`), mpi = num(`${p}_mpi`);
 
+  const totalMonthly = monthly + (lpt+mgmt+ins+mpi)/12;
+  document.getElementById(`${p}_m_mortgage`).textContent = monthly ? fmt(monthly) : '—';
+  document.getElementById(`${p}_m_lpt`).textContent = lpt ? fmt(lpt/12) : '—';
+  document.getElementById(`${p}_m_mgmt`).textContent = mgmt ? fmt(mgmt/12) : '—';
+  document.getElementById(`${p}_m_ins`).textContent = ins ? fmt(ins/12) : '—';
+  document.getElementById(`${p}_m_mpi`).textContent = mpi ? fmt(mpi/12) : '—';
+  document.getElementById(`${p}_m_total`).textContent = totalMonthly ? fmt(totalMonthly) : '—';
+
   const savings = num(`${p}_savings`);
   const affordText = (()=>{
     if(savings<=0) return '';
@@ -432,7 +460,6 @@ function calcSide(p){
   const affordEl = document.getElementById(`${p}_afford`);
   if(affordEl) affordEl.innerHTML = affordText;
 
-  const totalMonthly = monthly + (lpt+mgmt+ins+mpi)/12;
   return {price, total, monthly, totalMonthly, lpt, mgmt, ins, mpi};
 }
 
