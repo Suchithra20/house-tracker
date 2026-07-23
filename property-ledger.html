@@ -252,6 +252,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <tr><td>Registration fee</td><td class="amt"><input type="number" id="a_reg" value="600"></td></tr>
         <tr><td>Bank valuation / arrangement fee</td><td class="amt"><input type="number" id="a_bankfee" value="150"></td></tr>
         <tr><td>Moving costs</td><td class="amt"><input type="number" id="a_move" value="500"></td></tr>
+        <tr><td>Repairs / renovation budget</td><td class="amt"><input type="number" id="a_repairs" value="10000"></td></tr>
         <tr><td>Immediate furnishing / snag budget <button class="mini-btn" onclick="toggleFurnish('a')">breakdown</button></td><td class="amt"><input type="number" id="a_furnish" value="0"></td></tr>
         <tr class="total"><td>Total cash needed at closing</td><td class="amt" id="a_total">—</td></tr>
       </table>
@@ -337,6 +338,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <tr><td>Registration fee</td><td class="amt"><input type="number" id="b_reg" value="600"></td></tr>
         <tr><td>Bank valuation / arrangement fee</td><td class="amt"><input type="number" id="b_bankfee" value="150"></td></tr>
         <tr><td>Moving costs</td><td class="amt"><input type="number" id="b_move" value="500"></td></tr>
+        <tr><td>Repairs / renovation budget</td><td class="amt"><input type="number" id="b_repairs" value="0"></td></tr>
         <tr><td>Immediate furnishing / snag budget <button class="mini-btn" onclick="toggleFurnish('b')">breakdown</button></td><td class="amt"><input type="number" id="b_furnish" value="0"></td></tr>
         <tr class="total"><td>Total cash needed at closing</td><td class="amt" id="b_total">—</td></tr>
       </table>
@@ -386,7 +388,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <ul class="rationale-list">
         <li><b>Price/Value — 8:</b> Comparable unit 180 The Gallery sold €310,000 (Apr 2025); Apt 19 is currently asking €325,000, so your €310k target sits at last year's comp price in an appreciating development. <a href="https://propertypriceregisterireland.com/details/180_the_gallery_turvey_walk_donabate_co_dublin_k36_kc78_ireland-782527/" target="_blank" rel="noopener">Price Register ↗</a> · <a href="https://www.daft.ie/for-sale/apartment-19-block-a-the-gallery-turvey-walk-donabate-co-dublin/6588219" target="_blank" rel="noopener">Daft listing ↗</a></li>
         <li><b>Location & Commute — 6:</b> 4–5 min walk to Donabate station; not yet on DART (nearest DART is Malahide). ~24–32 min train to Connolly plus walk to IFSC, roughly 40–45 min door to desk. <a href="https://www.rome2rio.com/s/Donabate/Navan" target="_blank" rel="noopener">Rome2Rio journey data ↗</a> · <a href="https://en.wikipedia.org/wiki/Donabate_railway_station" target="_blank" rel="noopener">Donabate station ↗</a></li>
-        <li><b>Condition & BER — 6:</b> Apt 19's own BER unconfirmed; comparable units in the same block run B1–C1, more recent sales trending B-rated. Management fee ~€2,888/yr. <a href="https://www.myhome.ie/residential/brochure/apartment-185-the-gallery-turvey-walk-donabate-county-dublin/4853295" target="_blank" rel="noopener">Comparable BER example ↗</a></li>
+        <li><b>Condition & BER — 7:</b> Confirmed BER B3. This meets the standard green-mortgage threshold used by AIB, EBS, PTSB and Haven (B3 or better), so this property should qualify you for a green mortgage rate — typically 0.1–0.3% below the standard rate, worth roughly €10,000–€16,000 over a 30-year term on a loan this size. Management fee ~€2,888/yr. <a href="https://homerating.ie/green-mortgage-ber/" target="_blank" rel="noopener">Green mortgage BER thresholds ↗</a></li>
         <li><b>Investment/Growth — 8:</b> DART+ Coastal North will electrify and extend DART through Donabate; Fingal is one of Ireland's fastest-growing counties with sustained housing demand. <a href="https://www.gov.ie/en/department-of-transport/press-releases/minister-ryan-secures-approval-of-dart-coastal-north/" target="_blank" rel="noopener">Gov.ie DART+ announcement ↗</a></li>
         <li><b>Space & Layout — 6:</b> Typical 2-bed layout for the development, around 70–77sqm — solid but unremarkable versus other units on the market here. <a href="https://www.daft.ie/for-sale/apartment-162-block-h-the-gallery-turvey-walk-donabate-co-dublin/6291540" target="_blank" rel="noopener">Comparable listing ↗</a></li>
       </ul>
@@ -395,23 +397,23 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <ul class="rationale-list">
         <li><b>Price/Value — 7:</b> This exact unit sold for €252,000 in Aug 2019 and is now asking €330,000 — about 31% appreciation over 7 years (~4%/yr), in line with typical Dublin growth. Fairly priced, not a standout discount. <a href="https://ww1.daft.ie/price-register/dublin/clongriffin/beau-park-terrace/?d_rd=1" target="_blank" rel="noopener">Price Register ↗</a> · <a href="https://www.daft.ie/property-for-sale/clongriffin-dublin/duplexes" target="_blank" rel="noopener">Daft listing ↗</a></li>
         <li><b>Location & Commute — 8:</b> Clongriffin has its own working DART station today (unlike Donabate's future upgrade) — around a 10–15 min walk, with journeys into Connolly in roughly 10 minutes on the train itself. Meaningfully faster and more reliable than Property A's commute. <a href="https://en.wikipedia.org/wiki/Clongriffin" target="_blank" rel="noopener">Clongriffin overview ↗</a></li>
-        <li><b>Condition & BER — 6:</b> This unit's own BER isn't confirmed, but comparable Beau Park/Clongriffin duplexes built ~2006 run B3–C1. <a href="https://www.myhome.ie/residential/brochure/3-beau-park-mews-clongriffin-dublin-13/4999935" target="_blank" rel="noopener">Comparable BER example ↗</a></li>
+        <li><b>Condition & BER — 5:</b> Confirmed BER C1. This falls short of the B3 threshold that most Irish lenders (AIB, EBS, PTSB, Haven) require for their green mortgage rate, so you'd likely miss out on that 0.1–0.3% discount unless you go with Bank of Ireland's EcoSaver, which tiers a smaller discount across all BER grades. <a href="https://homerating.ie/green-mortgage-ber/" target="_blank" rel="noopener">Green mortgage BER thresholds ↗</a> · <a href="https://personalbanking.bankofireland.com/borrow/mortgages/ecosaver/" target="_blank" rel="noopener">Bank of Ireland EcoSaver ↗</a></li>
         <li><b>Investment/Growth — 7:</b> Established suburb with existing DART infrastructure already in place (versus Donabate's is-still-coming upgrade) — less speculative upside, but a proven, already-realised growth track record. <a href="https://en.wikipedia.org/wiki/Clongriffin" target="_blank" rel="noopener">Clongriffin history ↗</a></li>
         <li><b>Space & Layout — 7:</b> 2-bed, 2-bath duplex — the second bathroom is a real edge over Property A's single-bathroom layout, and duplex format usually means more separation between living and sleeping levels. <a href="https://www.daft.ie/property-for-sale/clongriffin-dublin/duplexes" target="_blank" rel="noopener">Daft listing ↗</a></li>
       </ul>
 
-      <div class="rationale-title" style="margin-top:18px;">Why B scores slightly higher overall</div>
+      <div class="rationale-title" style="margin-top:18px;">Why A now scores slightly higher overall</div>
       <table class="compare-table">
         <tr><th>Criterion</th><th>A</th><th>B</th><th>Edge</th></tr>
         <tr><td>Price/Value</td><td>8</td><td>7</td><td class="edge-a">A</td></tr>
         <tr><td>Location & Commute</td><td>6</td><td>8</td><td class="edge-b">B</td></tr>
-        <tr><td>Condition & BER</td><td>6</td><td>6</td><td class="edge-tie">Tie</td></tr>
+        <tr><td>Condition & BER</td><td>7</td><td>5</td><td class="edge-a">A</td></tr>
         <tr><td>Investment/Growth</td><td>8</td><td>7</td><td class="edge-a">A</td></tr>
         <tr><td>Space & Layout</td><td>6</td><td>7</td><td class="edge-b">B</td></tr>
-        <tr class="compare-total"><td>Average (equal weights)</td><td>6.8</td><td>7.0</td><td></td></tr>
+        <tr class="compare-total"><td>Average (equal weights)</td><td>7.0</td><td>6.8</td><td></td></tr>
       </table>
       <div class="rationale-note" style="font-style:normal;">
-        It's close, and the two properties win on different things rather than one being clearly better. <b>A's edge</b> is price positioning (bidding at last year's comp price in a still-appreciating area) and a stronger growth story, since Donabate's DART upgrade is still ahead of it — more upside, but further out. <b>B's edge</b> is a meaningfully better day-to-day commute (working DART today vs. a future one) and a more practical layout with the second bathroom. Investment/Growth is the one criterion where "further out" (A) is scored above "already realised" (B) — if you'd rather weight proven infrastructure over future potential, that gap could easily flip. This is genuinely close enough that your own weightings on location vs. growth will likely decide it more than my scores do.
+        Confirming the actual BERs flipped the balance: A's B3 rating clears the green-mortgage bar most Irish lenders use, while B's C1 likely misses it — a real, ongoing cost difference on top of the day-one comparison. <b>A's edge</b> is now price positioning, growth story, and mortgage-rate eligibility. <b>B's edge</b> stays the same — a genuinely better commute today and a more practical 2-bath layout. It's still close: B's commute advantage is a daily, lived experience while A's advantages are mostly financial and long-term, so which matters more is a values call, not a math one.
       </div>
     </div>
   </div>
@@ -474,8 +476,9 @@ function calcSide(p){
   const stamp = stampDuty(price);
   document.getElementById(`${p}_stamp`).textContent = fmt(stamp);
   const legal = num(`${p}_legal`), survey = num(`${p}_survey`), reg = num(`${p}_reg`),
-        bankfee = num(`${p}_bankfee`), move = num(`${p}_move`), furnish = num(`${p}_furnish`);
-  const total = priceGap + stamp + legal + survey + reg + bankfee + move + furnish;
+        bankfee = num(`${p}_bankfee`), move = num(`${p}_move`), furnish = num(`${p}_furnish`),
+        repairs = num(`${p}_repairs`);
+  const total = priceGap + stamp + legal + survey + reg + bankfee + move + repairs + furnish;
   document.getElementById(`${p}_total`).textContent = fmt(total);
   document.getElementById(`${p}_savings_highlight`).textContent = fmt(total);
 
@@ -616,8 +619,8 @@ function recalc(){
 
 // AI-researched scores, grounded in Property Price Register, Daft, and Fingal transport planning data
 const AI_SCORES = {
-  a: { price: 8, location: 6, condition: 6, growth: 8, layout: 6 },
-  b: { price: 7, location: 8, condition: 6, growth: 7, layout: 7 }
+  a: { price: 8, location: 6, condition: 7, growth: 8, layout: 6 },
+  b: { price: 7, location: 8, condition: 5, growth: 7, layout: 7 }
 };
 
 function applyAIScores(p){
@@ -684,10 +687,10 @@ function applyFurnishBudget(p){
 // ---- Persistence (Supabase) ----
 const fieldIds = [
   'a_name','a_addr','a_asking','a_bid','a_mortgage','a_savings','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
-  'a_legal','a_survey','a_reg','a_bankfee','a_move','a_furnish',
+  'a_legal','a_survey','a_reg','a_bankfee','a_move','a_repairs','a_furnish',
   'a_rate','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
   'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
-  'b_legal','b_survey','b_reg','b_bankfee','b_move','b_furnish',
+  'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes'
 ];
 criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
