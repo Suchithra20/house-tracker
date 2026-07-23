@@ -87,16 +87,12 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 
 .afford-note{font-size:0.82rem; margin-top:10px; color:var(--muted); font-variant-numeric:tabular-nums;}
 
-.fund-box{
-  background:var(--accent-soft); border:1px solid #C7CCF5; border-radius:10px; padding:18px; margin-bottom:20px;
+.savings-highlight{
+  display:flex; justify-content:space-between; align-items:baseline;
+  background:var(--accent-soft); border-radius:8px; padding:12px 14px; margin-bottom:14px;
 }
-.fund-box-title{font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:12px;}
-.fund-box .field-row{margin-bottom:12px;}
-.fund-box input[type=number]{background:#fff;}
-.fund-box-results{border-top:1px solid #C7CCF5; padding-top:10px;}
-.fr-row{display:flex; justify-content:space-between; font-size:0.85rem; padding:3px 0; font-variant-numeric:tabular-nums; color:var(--ink);}
-.fr-row.total{font-weight:700; border-top:1px solid #C7CCF5; margin-top:6px; padding-top:8px; font-size:0.92rem;}
-.fr-afford{font-size:0.8rem; margin-top:8px; color:var(--muted); font-variant-numeric:tabular-nums;}
+.sh-label{font-size:0.78rem; font-weight:500; color:var(--accent);}
+.sh-amount{font-size:1.3rem; font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;}
 
 .daft-btn{
   display:inline-block; white-space:nowrap; padding:8px 14px; border-radius:8px;
@@ -165,29 +161,25 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     <div class="dossier">
       <div class="dossier-label">Property A</div>
 
-      <div class="fund-box">
-        <div class="fund-box-title">Fund Calculation</div>
-        <div class="field-row">
-          <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
-          <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
-        </div>
-        <div class="fund-box-results">
-          <div class="fr-row"><span>From mortgage</span><span class="amt" id="a_loanused">—</span></div>
-          <div class="fr-row"><span>From savings (price gap)</span><span class="amt" id="a_pricegap">—</span></div>
-          <div class="fr-row total"><span>Total cash needed</span><span class="amt" id="a_total_top">—</span></div>
-          <div class="fr-afford" id="a_afford_top"></div>
-        </div>
-      </div>
-
       <div class="field-row">
         <div class="field"><label>Nickname</label><input type="text" id="a_name" value="Apt 19, The Gallery, Donabate"></div>
       </div>
+
+      <div class="savings-highlight">
+        <span class="sh-label">Savings you need to put in</span>
+        <span class="sh-amount" id="a_savings_highlight">—</span>
+      </div>
+
       <div class="field-row">
         <div class="field"><label>Address</label><input type="text" id="a_addr" value="Turvey Walk, Donabate, Co. Dublin"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="a_asking" value="310000"></div>
         <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="310000"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
+        <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="a_size" value=""></div>
@@ -243,29 +235,25 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     <div class="dossier">
       <div class="dossier-label">Property B</div>
 
-      <div class="fund-box">
-        <div class="fund-box-title">Fund Calculation</div>
-        <div class="field-row">
-          <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="b_mortgage" value=""></div>
-          <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
-        </div>
-        <div class="fund-box-results">
-          <div class="fr-row"><span>From mortgage</span><span class="amt" id="b_loanused">—</span></div>
-          <div class="fr-row"><span>From savings (price gap)</span><span class="amt" id="b_pricegap">—</span></div>
-          <div class="fr-row total"><span>Total cash needed</span><span class="amt" id="b_total_top">—</span></div>
-          <div class="fr-afford" id="b_afford_top"></div>
-        </div>
-      </div>
-
       <div class="field-row">
         <div class="field"><label>Nickname</label><input type="text" id="b_name" value="Property B"></div>
       </div>
+
+      <div class="savings-highlight">
+        <span class="sh-label">Savings you need to put in</span>
+        <span class="sh-amount" id="b_savings_highlight">—</span>
+      </div>
+
       <div class="field-row">
         <div class="field"><label>Address</label><input type="text" id="b_addr" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="b_asking" value="0"></div>
         <div class="field"><label>Your Offer €</label><input type="number" id="b_bid" value="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="b_mortgage" value=""></div>
+        <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="b_size" value=""></div>
@@ -381,8 +369,6 @@ function calcSide(p){
   // Loan used: capped at approved mortgage, else assume 90% LTV as a working default
   const loanUsed = price>0 ? (mortgageAvail>0 ? Math.min(mortgageAvail, price) : price*0.9) : 0;
   const priceGap = Math.max(0, price - loanUsed);
-  document.getElementById(`${p}_loanused`).textContent = fmt(loanUsed);
-  document.getElementById(`${p}_pricegap`).textContent = fmt(priceGap);
 
   const stamp = stampDuty(price);
   document.getElementById(`${p}_stamp`).textContent = fmt(stamp);
@@ -390,8 +376,7 @@ function calcSide(p){
         bankfee = num(`${p}_bankfee`), move = num(`${p}_move`), furnish = num(`${p}_furnish`);
   const total = priceGap + stamp + legal + survey + reg + bankfee + move + furnish;
   document.getElementById(`${p}_total`).textContent = fmt(total);
-  const totalTopEl = document.getElementById(`${p}_total_top`);
-  if(totalTopEl) totalTopEl.textContent = fmt(total);
+  document.getElementById(`${p}_savings_highlight`).textContent = fmt(total);
 
   const rate = num(`${p}_rate`)/100/12;
   const n = num(`${p}_term`)*12;
@@ -413,8 +398,6 @@ function calcSide(p){
   })();
   const affordEl = document.getElementById(`${p}_afford`);
   if(affordEl) affordEl.innerHTML = affordText;
-  const affordTopEl = document.getElementById(`${p}_afford_top`);
-  if(affordTopEl) affordTopEl.innerHTML = affordText;
 
   const totalMonthly = monthly + (lpt+mgmt+ins+mpi)/12;
   return {price, total, monthly, totalMonthly, lpt, mgmt, ins, mpi};
