@@ -592,6 +592,49 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   </div><!-- /tabBudget -->
 
   <div id="tabSavings" style="display:none;">
+
+    <div class="dossier" style="margin-bottom:20px;">
+      <div class="dossier-label">Financial Health Check</div>
+      <div class="sub" style="margin-bottom:14px;">A rule-based read on your numbers using common personal-finance benchmarks — a 6-month emergency fund, a ~20% savings rate, the 50/30/20 needs/wants/savings split, and a ≤35% income-to-housing guideline. This is pattern-matching against general guidelines, not personalized financial advice.</div>
+
+      <div class="verdict-banner" style="margin-bottom:14px;">
+        <div class="eyebrow2">Overall score</div>
+        <div class="verdict-headline">
+          <div class="verdict-winner" id="healthScoreValue">—</div>
+          <div class="verdict-reason" id="healthScoreLabel"></div>
+        </div>
+        <div class="verdict-grid">
+          <div class="vg-card">
+            <div class="vg-label">Emergency fund</div>
+            <div class="vg-row" id="healthEmergencyRow"><span>Coverage</span><span>—</span></div>
+          </div>
+          <div class="vg-card">
+            <div class="vg-label">Savings rate</div>
+            <div class="vg-row" id="healthSavingsRateRow"><span>Of income</span><span>—</span></div>
+          </div>
+          <div class="vg-card">
+            <div class="vg-label">Spending balance</div>
+            <div class="vg-row" id="healthNeedsRow"><span>Needs</span><span>—</span></div>
+            <div class="vg-row" id="healthWantsRow"><span>Wants</span><span>—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <table class="costs">
+        <tr><td>Property A — housing cost as % of income</td><td class="amt" id="healthHousingA">—</td></tr>
+        <tr><td>Property B — housing cost as % of income</td><td class="amt" id="healthHousingB">—</td></tr>
+      </table>
+
+      <button class="mini-btn" style="margin-top:10px;" onclick="toggleHealthDetail()">How this is scored</button>
+      <div class="rationale-panel" id="healthDetailPanel" style="display:none; margin-top:10px;">
+        <ul class="rationale-list" style="margin:0;">
+          <li><b>Emergency fund (25%):</b> your manually-set emergency amount compared to 6× your monthly take-home salary. Full marks at 100%+ of that target.</li>
+          <li><b>Savings rate (25%):</b> your "Savings / investments" monthly entry as a percentage of take-home income, benchmarked against a commonly cited 20% target.</li>
+          <li><b>Spending balance (25%):</b> groceries, transport, and utilities ("needs") kept at or under ~50% of income, and subscriptions, cosmetics, leisure, and other ("wants") at or under ~30% — the classic 50/30/20 rule, savings being the remaining 20%.</li>
+          <li><b>Housing affordability (25%):</b> each property's total monthly cost (mortgage + LPT + management + insurances) as a share of income, checked against a commonly used ≤35% guideline. This one's shown per-property since it depends which you choose, rather than folded into the single score above.</li>
+        </ul>
+      </div>
+    </div>
     <div class="dossier" style="margin-bottom:20px;">
       <div class="dossier-label">Your Savings</div>
       <div class="sub" style="margin-bottom:14px;">Add every place you're holding savings. An emergency fund of 6 months' salary is reserved automatically, and anything you mark "for future" (car, wedding, etc.) is set aside too — only what's left counts toward the house.</div>
@@ -1017,7 +1060,81 @@ function calcOverpayment(p, side){
   document.getElementById(`${p}_op_interestsaved`).textContent = isFinite(withOver.months) ? fmt(stdInterest - withOver.totalInterest) : '—';
 }
 
+// ---- Financial Health Check (rule-based, transparent benchmarks) ----
+function toggleHealthDetail(){
+  const panel = document.getElementById('healthDetailPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function calcHealthScore(a, b){
+  const salary = num('bud_salary');
+  const emergency = savingsSources.reduce((s,i)=>s+(i.emergency||0), 0);
+  const savingsContrib = num('bud_savings_contrib');
+  const needs = num('bud_groceries') + num('bud_transport') + num('bud_utilities');
+  const wants = num('bud_subs') + num('bud_cosmetics') + num('bud_leisure') + num('bud_other');
+
+  if(!salary){
+    document.getElementById('healthScoreValue').textContent = 'Add your salary';
+    document.getElementById('healthScoreLabel').textContent = 'Fill in Monthly Budget → take-home salary to see a score here.';
+    document.getElementById('healthEmergencyRow').innerHTML = '<span>Coverage</span><span>—</span>';
+    document.getElementById('healthSavingsRateRow').innerHTML = '<span>Of income</span><span>—</span>';
+    document.getElementById('healthNeedsRow').innerHTML = '<span>Needs</span><span>—</span>';
+    document.getElementById('healthWantsRow').innerHTML = '<span>Wants</span><span>—</span>';
+    document.getElementById('healthHousingA').textContent = '—';
+    document.getElementById('healthHousingB').textContent = '—';
+    return;
+  }
+
+  // Emergency fund: emergency amount vs 6x salary target
+  const emergencyTarget = salary * 6;
+  const emergencyPct = emergencyTarget ? Math.min(100, (emergency/emergencyTarget)*100) : 0;
+  document.getElementById('healthEmergencyRow').innerHTML = `<span>Coverage</span><span>${emergencyPct.toFixed(0)}% of 6mo target</span>`;
+
+  // Savings rate: vs 20% guideline
+  const savingsRatePct = salary ? (savingsContrib/salary)*100 : 0;
+  const savingsRateScore = Math.min(100, (savingsRatePct/20)*100);
+  document.getElementById('healthSavingsRateRow').innerHTML = `<span>Of income</span><span>${savingsRatePct.toFixed(0)}% (target 20%)</span>`;
+
+  // Spending balance: needs <=50%, wants <=30%
+  const needsPct = (needs/salary)*100;
+  const wantsPct = (wants/salary)*100;
+  const needsScore = Math.max(0, 100 - Math.max(0, needsPct-50)*4);
+  const wantsScore = Math.max(0, 100 - Math.max(0, wantsPct-30)*4);
+  const spendingScore = (needsScore + wantsScore) / 2;
+  document.getElementById('healthNeedsRow').innerHTML = `<span>Needs</span><span>${needsPct.toFixed(0)}% (target ≤50%)</span>`;
+  document.getElementById('healthWantsRow').innerHTML = `<span>Wants</span><span>${wantsPct.toFixed(0)}% (target ≤30%)</span>`;
+
+  // Housing affordability per property, vs 35% guideline
+  const housingPctA = a.totalMonthly ? (a.totalMonthly/salary)*100 : 0;
+  const housingPctB = b.totalMonthly ? (b.totalMonthly/salary)*100 : 0;
+  const housingScoreA = a.totalMonthly ? Math.max(0, 100 - Math.max(0, housingPctA-35)*4) : null;
+  const housingScoreB = b.totalMonthly ? Math.max(0, 100 - Math.max(0, housingPctB-35)*4) : null;
+  document.getElementById('healthHousingA').textContent = a.totalMonthly
+    ? `${housingPctA.toFixed(0)}% ${housingPctA<=35 ? '— within the ≤35% guideline' : '— above the commonly cited ≤35% guideline'}`
+    : '—';
+  document.getElementById('healthHousingB').textContent = b.totalMonthly
+    ? `${housingPctB.toFixed(0)}% ${housingPctB<=35 ? '— within the ≤35% guideline' : '— above the commonly cited ≤35% guideline'}`
+    : '—';
+
+  // Composite: emergency, savings rate, spending balance always count; housing counts if at least one property has data
+  const housingScores = [housingScoreA, housingScoreB].filter(x=>x!==null);
+  const housingAvg = housingScores.length ? housingScores.reduce((s,x)=>s+x,0)/housingScores.length : null;
+  const parts = [emergencyPct, savingsRateScore, spendingScore];
+  if(housingAvg !== null) parts.push(housingAvg);
+  const overall = parts.reduce((s,x)=>s+x,0) / parts.length;
+
+  let label;
+  if(overall >= 80) label = 'Strong — your numbers track well against standard guidelines.';
+  else if(overall >= 60) label = 'Solid — generally on track, with some room to tighten up.';
+  else if(overall >= 40) label = 'Needs attention — a few areas are meaningfully off the usual benchmarks.';
+  else label = 'Worth a closer look — several areas sit well outside typical guidelines.';
+
+  document.getElementById('healthScoreValue').textContent = Math.round(overall) + ' / 100';
+  document.getElementById('healthScoreLabel').textContent = label;
+}
+
 function calcBudget(a, b){
+  calcHealthScore(a, b);
   calcOverpayment('a', a);
   calcOverpayment('b', b);
   const salary = num('bud_salary');
