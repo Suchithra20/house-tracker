@@ -121,6 +121,13 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 .dp-ratio-track{position:relative; height:10px; border-radius:6px; background:var(--win-soft); overflow:hidden; border:1px solid var(--border);}
 .dp-ratio-fill{position:absolute; top:0; left:0; height:100%; background:var(--accent); transition:width 0.25s ease;}
 
+.emi-highlight{
+  display:flex; justify-content:space-between; align-items:baseline;
+  background:#FEF3C7; border:1px solid #FCD34D; border-radius:8px; padding:12px 14px; margin-bottom:14px;
+}
+.emi-highlight .sh-label{color:#92400E;}
+.emi-highlight .sh-amount{color:#92400E;}
+
 .daft-btn{
   display:inline-block; white-space:nowrap; padding:8px 14px; border-radius:8px;
   background:var(--accent); color:#fff; font-size:0.82rem; font-weight:600; text-decoration:none;
@@ -344,6 +351,11 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="dp-ratio-track"><div class="dp-ratio-fill" id="a_dp_fill" style="width:0%;"></div></div>
       </div>
 
+      <div class="emi-highlight" id="a_emi_highlight">
+        <span class="sh-label">Of your monthly salary goes to EMI</span>
+        <span class="sh-amount" id="a_emi_pct">—</span>
+      </div>
+
       <div class="field-row">
         <div class="field"><label>Address</label><input type="text" id="a_addr" value="Turvey Walk, Donabate, Co. Dublin"></div>
       </div>
@@ -437,6 +449,11 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
           <span id="b_loan_pct">— % financed</span>
         </div>
         <div class="dp-ratio-track"><div class="dp-ratio-fill" id="b_dp_fill" style="width:0%;"></div></div>
+      </div>
+
+      <div class="emi-highlight" id="b_emi_highlight">
+        <span class="sh-label">Of your monthly salary goes to EMI</span>
+        <span class="sh-amount" id="b_emi_pct">—</span>
       </div>
 
       <div class="field-row">
@@ -855,6 +872,10 @@ function calcSide(p){
     monthly = loanUsed * rate / (1-Math.pow(1+rate,-n));
   }
   document.getElementById(`${p}_monthly`).textContent = monthly ? fmt(monthly) : '—';
+
+  const salaryForEmi = num('bud_salary');
+  const emiPct = salaryForEmi>0 && monthly>0 ? (monthly/salaryForEmi*100) : 0;
+  document.getElementById(`${p}_emi_pct`).textContent = (salaryForEmi>0 && monthly>0) ? `${emiPct.toFixed(1)}%` : '—';
 
   const lpt = num(`${p}_lpt`), mgmt = num(`${p}_mgmt`), ins = num(`${p}_ins`), mpi = num(`${p}_mpi`);
 
