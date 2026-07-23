@@ -111,6 +111,16 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 .sh-label{font-size:0.78rem; font-weight:500; color:var(--accent);}
 .sh-amount{font-size:1.3rem; font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:-0.01em;}
 
+.dp-ratio-bar{margin-bottom:16px;}
+.dp-ratio-labels{
+  display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;
+}
+.dp-ratio-labels span{font-size:1.05rem; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.01em;}
+#a_dp_pct, #b_dp_pct{color:var(--accent);}
+#a_loan_pct, #b_loan_pct{color:var(--win);}
+.dp-ratio-track{position:relative; height:10px; border-radius:6px; background:var(--win-soft); overflow:hidden; border:1px solid var(--border);}
+.dp-ratio-fill{position:absolute; top:0; left:0; height:100%; background:var(--accent); transition:width 0.25s ease;}
+
 .daft-btn{
   display:inline-block; white-space:nowrap; padding:8px 14px; border-radius:8px;
   background:var(--accent); color:#fff; font-size:0.82rem; font-weight:600; text-decoration:none;
@@ -326,6 +336,14 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <span class="sh-amount" id="a_savings_highlight">—</span>
       </div>
 
+      <div class="dp-ratio-bar" id="a_dp_bar">
+        <div class="dp-ratio-labels">
+          <span id="a_dp_pct">— % down</span>
+          <span id="a_loan_pct">— % financed</span>
+        </div>
+        <div class="dp-ratio-track"><div class="dp-ratio-fill" id="a_dp_fill" style="width:0%;"></div></div>
+      </div>
+
       <div class="field-row">
         <div class="field"><label>Address</label><input type="text" id="a_addr" value="Turvey Walk, Donabate, Co. Dublin"></div>
       </div>
@@ -411,6 +429,14 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="savings-highlight">
         <span class="sh-label">Savings you need to put in</span>
         <span class="sh-amount" id="b_savings_highlight">—</span>
+      </div>
+
+      <div class="dp-ratio-bar" id="b_dp_bar">
+        <div class="dp-ratio-labels">
+          <span id="b_dp_pct">— % down</span>
+          <span id="b_loan_pct">— % financed</span>
+        </div>
+        <div class="dp-ratio-track"><div class="dp-ratio-fill" id="b_dp_fill" style="width:0%;"></div></div>
       </div>
 
       <div class="field-row">
@@ -799,6 +825,13 @@ function calcSide(p){
   // Loan used: capped at approved mortgage, else assume 90% LTV as a working default
   const loanUsed = price>0 ? (mortgageAvail>0 ? Math.min(mortgageAvail, price) : price*0.9) : 0;
   const priceGap = Math.max(0, price - loanUsed);
+
+  // Down payment vs loan as % of offer price
+  const dpPct = price>0 ? (priceGap/price*100) : 0;
+  const loanPct = price>0 ? (loanUsed/price*100) : 0;
+  document.getElementById(`${p}_dp_pct`).textContent = price>0 ? `${dpPct.toFixed(1)}% down` : '— % down';
+  document.getElementById(`${p}_loan_pct`).textContent = price>0 ? `${loanPct.toFixed(1)}% financed` : '— % financed';
+  document.getElementById(`${p}_dp_fill`).style.width = price>0 ? `${dpPct}%` : '0%';
 
   const stamp = stampDuty(price);
   document.getElementById(`${p}_stamp`).textContent = fmt(stamp);
