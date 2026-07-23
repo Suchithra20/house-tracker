@@ -4,97 +4,99 @@
 <meta charset="UTF-8">
 <title>The Ledger — Property Comparison</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root{
-  --ink:#242420;
-  --paper:#E9E6D9;
-  --paper-dark:#DCD8C7;
-  --navy:#1C2541;
-  --brick:#A13D2B;
-  --sage:#4C6444;
-  --brass:#B08D57;
-  --line: rgba(36,36,32,0.15);
+  --ink:#18181B;
+  --muted:#71717A;
+  --faint:#A1A1AA;
+  --bg:#FAFAF9;
+  --card:#FFFFFF;
+  --border:#E4E4E7;
+  --accent:#4338CA;
+  --accent-soft:#EEF0FD;
+  --win:#16A34A;
+  --win-soft:#F0FDF4;
+  --radius:14px;
 }
 *{box-sizing:border-box;}
 body{
   margin:0;
-  background:var(--paper);
+  background:var(--bg);
   color:var(--ink);
-  font-family:'IBM Plex Sans', sans-serif;
-  background-image: radial-gradient(rgba(0,0,0,0.02) 1px, transparent 1px);
-  background-size:3px 3px;
+  font-family:'Inter', sans-serif;
+  -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px;}
+.wrap{max-width:1140px;margin:0 auto;padding:48px 24px 90px;}
 
-header{border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;}
-h1{font-family:'Fraunces', serif; font-weight:700; font-size:2.6rem; margin:0; letter-spacing:-0.01em;}
-.eyebrow{font-family:'IBM Plex Mono', monospace; text-transform:uppercase; font-size:0.72rem; letter-spacing:0.12em; color:var(--brick); margin-bottom:4px;}
-.sub{font-size:0.9rem;color:#5a5a52;max-width:460px;}
+header{margin-bottom:28px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;}
+h1{font-weight:800; font-size:2rem; margin:0; letter-spacing:-0.02em;}
+.eyebrow{text-transform:uppercase; font-size:0.72rem; font-weight:600; letter-spacing:0.08em; color:var(--accent); margin-bottom:6px;}
+.sub{font-size:0.92rem; color:var(--muted); max-width:460px; line-height:1.5;}
 
-.savebar{font-size:0.72rem; color:#7a7a70; text-align:right; font-family:'IBM Plex Mono',monospace; margin-bottom:14px;}
+.savebar{font-size:0.78rem; color:var(--faint); text-align:right; margin-bottom:16px;}
 
 /* ---- Top verdict banner ---- */
 .verdict-banner{
-  background:var(--navy); color:var(--paper); padding:26px 28px; margin-bottom:26px;
-  position:relative; overflow:hidden;
+  background:var(--ink); color:#fff; padding:32px; margin-bottom:28px; border-radius:var(--radius);
 }
-.verdict-banner .eyebrow2{font-family:'IBM Plex Mono',monospace; text-transform:uppercase; font-size:0.68rem; letter-spacing:0.14em; color:var(--brass); margin-bottom:10px;}
-.verdict-headline{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:18px;}
-.verdict-winner{font-family:'Fraunces',serif; font-weight:700; font-size:2rem; letter-spacing:-0.01em;}
-.verdict-reason{font-size:0.9rem; color:#C9CBD6;}
-.verdict-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.verdict-banner .eyebrow2{text-transform:uppercase; font-size:0.7rem; font-weight:600; letter-spacing:0.1em; color:#A5B4FC; margin-bottom:10px;}
+.verdict-headline{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:22px;}
+.verdict-winner{font-weight:800; font-size:1.9rem; letter-spacing:-0.02em;}
+.verdict-reason{font-size:0.92rem; color:#B4B4BC; line-height:1.5;}
+.verdict-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
 @media(max-width:760px){.verdict-grid{grid-template-columns:1fr;}}
-.vg-card{background:rgba(255,255,255,0.06); padding:12px 14px; border-left:3px solid var(--brass);}
-.vg-label{font-family:'IBM Plex Mono',monospace; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.08em; color:#9EA3B8; margin-bottom:6px;}
-.vg-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:0.88rem; padding:2px 0;}
-.vg-row.win{color:#9FD9A8; font-weight:600;}
-.vg-empty{font-size:0.85rem; color:#9EA3B8; font-style:italic;}
+.vg-card{background:rgba(255,255,255,0.06); padding:16px 18px; border-radius:10px;}
+.vg-label{font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:#8A8A94; margin-bottom:10px;}
+.vg-row{display:flex; justify-content:space-between; font-size:0.92rem; padding:3px 0; font-variant-numeric:tabular-nums;}
+.vg-row.win{color:#6EE7A0; font-weight:700;}
 
-.cols{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
 @media(max-width:860px){.cols{grid-template-columns:1fr;}}
 
-.dossier{background:var(--paper-dark); border:1px solid var(--line); position:relative; padding:22px 22px 26px;}
-.dossier::before{
-  content:attr(data-tab); position:absolute; top:-14px; left:22px;
-  background:var(--navy); color:var(--paper); font-family:'IBM Plex Mono',monospace;
-  font-size:0.68rem; letter-spacing:0.1em; padding:4px 10px; text-transform:uppercase;
+.dossier{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); position:relative; padding:24px;}
+.dossier-label{
+  display:inline-block; font-size:0.7rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--accent); background:var(--accent-soft); padding:4px 10px; border-radius:6px; margin-bottom:16px;
 }
-.field-row{display:flex; gap:10px; margin-bottom:10px;}
+.field-row{display:flex; gap:10px; margin-bottom:12px;}
 .field{flex:1;}
-label{display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:#6b6b60; margin-bottom:3px; font-family:'IBM Plex Mono',monospace;}
+label{display:block; font-size:0.75rem; font-weight:500; color:var(--muted); margin-bottom:5px;}
 input[type=text], input[type=number]{
-  width:100%; padding:7px 8px; border:1px solid var(--line); background:var(--paper);
-  font-family:'IBM Plex Mono', monospace; font-size:0.85rem; color:var(--ink);
+  width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--card);
+  font-family:'Inter', sans-serif; font-size:0.9rem; color:var(--ink); font-variant-numeric:tabular-nums;
 }
-input:focus{outline:2px solid var(--navy);}
+input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
 
-.section-title{font-family:'Fraunces', serif; font-weight:600; font-size:1.05rem; margin:20px 0 8px; padding-top:14px; border-top:1px dashed var(--line);}
-.section-title:first-of-type{border-top:none; padding-top:0; margin-top:16px;}
+.section-title{font-weight:700; font-size:0.95rem; margin:22px 0 10px; padding-top:18px; border-top:1px solid var(--border); letter-spacing:-0.01em;}
+.section-title:first-of-type{border-top:none; padding-top:0; margin-top:18px;}
 
-table.costs{width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:0.82rem;}
-table.costs td{padding:4px 0; border-bottom:1px dotted var(--line);}
+table.costs{width:100%; border-collapse:collapse; font-size:0.86rem;}
+table.costs td{padding:6px 0; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums;}
 table.costs td.amt{text-align:right; white-space:nowrap;}
-table.costs tr.total td{font-weight:600; border-top:2px solid var(--ink); border-bottom:none; padding-top:7px;}
-table.costs tr.computed td{color:#4a4a42;}
-table.costs input{width:90px; text-align:right; padding:3px 6px; font-size:0.8rem;}
+table.costs tr.total td{font-weight:700; border-top:1.5px solid var(--ink); border-bottom:none; padding-top:10px; font-size:0.92rem;}
+table.costs tr.computed td{color:var(--muted); font-size:0.83rem;}
+table.costs input{width:90px; text-align:right; padding:4px 8px; font-size:0.85rem; border-radius:6px;}
 
-.note{margin-top:10px;}
+.note{margin-top:12px;}
 textarea{
-  width:100%; min-height:60px; padding:8px; border:1px solid var(--line); background:var(--paper);
-  font-family:'IBM Plex Sans',sans-serif; font-size:0.82rem; resize:vertical;
+  width:100%; min-height:60px; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--card);
+  font-family:'Inter',sans-serif; font-size:0.86rem; resize:vertical;
 }
+textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
 
-.score-panel{margin-top:28px; background:var(--paper-dark); border:1px solid var(--line); padding:22px;}
-.score-panel h2{font-family:'Fraunces',serif; font-size:1.3rem; margin:0 0 4px;}
-.score-panel .sub{margin-bottom:16px;}
-.crit-row{display:grid; grid-template-columns:170px 1fr 60px 60px 70px; gap:10px; align-items:center; margin-bottom:10px; font-size:0.85rem;}
-.crit-row .name{font-family:'IBM Plex Mono',monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em;}
-.crit-row input[type=range]{width:100%;}
-.crit-row input[type=number]{width:55px; padding:3px 4px; text-align:center;}
-.crit-head{display:grid; grid-template-columns:170px 1fr 60px 60px 70px; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:0.68rem; text-transform:uppercase; color:#6b6b60; margin-bottom:8px;}
+.afford-note{font-size:0.82rem; margin-top:10px; color:var(--muted); font-variant-numeric:tabular-nums;}
 
-footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid var(--line); padding-top:14px; font-family:'IBM Plex Mono',monospace;}
+.score-panel{margin-top:24px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px;}
+.score-panel h2{font-weight:700; font-size:1.15rem; margin:0 0 6px; letter-spacing:-0.01em;}
+.score-panel .sub{margin-bottom:20px;}
+.crit-row{display:grid; grid-template-columns:170px 1fr 56px 56px 56px; gap:12px; align-items:center; margin-bottom:12px; font-size:0.85rem;}
+.crit-row .name{font-size:0.85rem; font-weight:500; color:var(--ink);}
+.crit-row input[type=range]{width:100%; accent-color:var(--accent);}
+.crit-row input[type=number]{width:52px; padding:4px 4px; text-align:center;}
+.crit-head{display:grid; grid-template-columns:170px 1fr 56px 56px 56px; gap:12px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--faint); margin-bottom:10px;}
+
+footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px solid var(--border); padding-top:16px; line-height:1.6;}
 </style>
 </head>
 <body>
@@ -135,7 +137,8 @@ footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid v
     </div>
   </div>
 
-  <div class="dossier" data-tab="Your Funds" style="margin-bottom:22px;">
+  <div class="dossier" style="margin-bottom:22px;">
+    <div class="dossier-label">Your Funds</div>
     <div class="field-row">
       <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="g_mortgage" value=""></div>
       <div class="field"><label>Savings available €</label><input type="number" id="g_savings" value=""></div>
@@ -145,7 +148,8 @@ footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid v
 
   <div class="cols">
     <!-- PROPERTY A -->
-    <div class="dossier" data-tab="Property A">
+    <div class="dossier">
+      <div class="dossier-label">Property A</div>
       <div class="field-row">
         <div class="field"><label>Nickname</label><input type="text" id="a_name" value="Apt 19, The Gallery, Donabate"></div>
       </div>
@@ -193,13 +197,14 @@ footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid v
         <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="a_ins" value=""></td></tr>
         <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="a_mpi" value=""></td></tr>
       </table>
-      <div class="note" id="a_afford" style="font-family:'IBM Plex Mono',monospace; font-size:0.78rem; margin-top:8px;"></div>
+      <div class="afford-note" id="a_afford"></div>
 
       <div class="note"><label>Pros / cons notes</label><textarea id="a_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
     </div>
 
     <!-- PROPERTY B -->
-    <div class="dossier" data-tab="Property B">
+    <div class="dossier">
+      <div class="dossier-label">Property B</div>
       <div class="field-row">
         <div class="field"><label>Nickname</label><input type="text" id="b_name" value="Property B"></div>
       </div>
@@ -247,7 +252,7 @@ footer{margin-top:40px; font-size:0.72rem; color:#7a7a70; border-top:1px solid v
         <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="b_ins" value=""></td></tr>
         <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="b_mpi" value=""></td></tr>
       </table>
-      <div class="note" id="b_afford" style="font-family:'IBM Plex Mono',monospace; font-size:0.78rem; margin-top:8px;"></div>
+      <div class="afford-note" id="b_afford"></div>
 
       <div class="note"><label>Pros / cons notes</label><textarea id="b_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
     </div>
@@ -291,7 +296,7 @@ criteria.forEach(c=>{
     <input type="range" min="1" max="5" value="3" id="w_${c.key}">
     <input type="number" min="1" max="10" value="5" id="a_s_${c.key}">
     <input type="number" min="1" max="10" value="5" id="b_s_${c.key}">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#7a7a70;" id="w_${c.key}_disp">wt 3</div>
+    <div style="font-size:0.72rem;color:var(--faint);" id="w_${c.key}_disp">wt 3</div>
   `;
   critRows.appendChild(row);
 });
