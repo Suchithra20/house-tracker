@@ -137,15 +137,6 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     </div>
   </div>
 
-  <div class="dossier" style="margin-bottom:22px;">
-    <div class="dossier-label">Your Funds</div>
-    <div class="field-row">
-      <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="g_mortgage" value=""></div>
-      <div class="field"><label>Savings available €</label><input type="number" id="g_savings" value=""></div>
-    </div>
-    <div class="sub" style="margin-top:4px;">Used for both properties below — each one automatically works out how much of its own price and costs come from your mortgage vs. your savings.</div>
-  </div>
-
   <div class="cols">
     <!-- PROPERTY A -->
     <div class="dossier">
@@ -159,6 +150,10 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="a_asking" value="310000"></div>
         <div class="field"><label>Your Offer €</label><input type="number" id="a_bid" value="310000"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="a_mortgage" value=""></div>
+        <div class="field"><label>Savings available €</label><input type="number" id="a_savings" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="a_size" value=""></div>
@@ -214,6 +209,10 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="field-row">
         <div class="field"><label>Asking Price €</label><input type="number" id="b_asking" value="0"></div>
         <div class="field"><label>Your Offer €</label><input type="number" id="b_bid" value="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Mortgage approved (AIP) €</label><input type="number" id="b_mortgage" value=""></div>
+        <div class="field"><label>Savings available €</label><input type="number" id="b_savings" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="b_size" value=""></div>
@@ -317,7 +316,7 @@ function calcSide(p){
   const price = num(`${p}_bid`) || num(`${p}_asking`);
   document.getElementById(`${p}_price_disp`).textContent = fmt(price);
 
-  const mortgageAvail = num('g_mortgage');
+  const mortgageAvail = num(`${p}_mortgage`);
   // Loan used: capped at approved mortgage, else assume 90% LTV as a working default
   const loanUsed = price>0 ? (mortgageAvail>0 ? Math.min(mortgageAvail, price) : price*0.9) : 0;
   const priceGap = Math.max(0, price - loanUsed);
@@ -341,7 +340,7 @@ function calcSide(p){
 
   const lpt = num(`${p}_lpt`), mgmt = num(`${p}_mgmt`), ins = num(`${p}_ins`), mpi = num(`${p}_mpi`);
 
-  const savings = num('g_savings');
+  const savings = num(`${p}_savings`);
   const affordEl = document.getElementById(`${p}_afford`);
   if(affordEl){
     if(savings>0){
@@ -441,11 +440,10 @@ function recalc(){
 
 // ---- Persistence (Supabase) ----
 const fieldIds = [
-  'g_mortgage','g_savings',
-  'a_name','a_addr','a_asking','a_bid','a_size','a_beds','a_comp','a_ber','a_commute',
+  'a_name','a_addr','a_asking','a_bid','a_mortgage','a_savings','a_size','a_beds','a_comp','a_ber','a_commute',
   'a_legal','a_survey','a_reg','a_bankfee','a_move','a_furnish',
   'a_rate','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
-  'b_name','b_addr','b_asking','b_bid','b_size','b_beds','b_comp','b_ber','b_commute',
+  'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_furnish',
   'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes'
 ];
@@ -514,7 +512,7 @@ async function loadSaved(){
 
 // Wire up recalculation
 ['a','b'].forEach(p=>{
-  ['asking','bid','legal','survey','reg','bankfee','move','furnish','rate','term','lpt','mgmt','ins','mpi'].forEach(f=>{
+  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','furnish','rate','term','lpt','mgmt','ins','mpi'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
@@ -522,9 +520,6 @@ async function loadSaved(){
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
-});
-['g_mortgage','g_savings'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', recalc);
 });
 criteria.forEach(c=>{
   document.getElementById(`w_${c.key}`).addEventListener('input', e=>{
