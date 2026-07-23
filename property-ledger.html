@@ -87,6 +87,18 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 
 .afford-note{font-size:0.82rem; margin-top:10px; color:var(--muted); font-variant-numeric:tabular-nums;}
 
+.daft-btn{
+  display:inline-block; white-space:nowrap; padding:8px 14px; border-radius:8px;
+  background:var(--accent); color:#fff; font-size:0.82rem; font-weight:600; text-decoration:none;
+}
+.daft-btn:hover{background:#3730A3;}
+
+.photo-strip{display:flex; gap:8px; overflow-x:auto; margin-top:10px; padding-bottom:4px;}
+.photo-strip img{
+  height:84px; width:110px; object-fit:cover; border-radius:8px; border:1px solid var(--border); flex-shrink:0;
+}
+.photo-strip .photo-empty{font-size:0.78rem; color:var(--faint); padding:8px 0;}
+
 .score-panel{margin-top:24px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px;}
 .score-panel h2{font-weight:700; font-size:1.15rem; margin:0 0 6px; letter-spacing:-0.01em;}
 .score-panel .sub{margin-bottom:20px;}
@@ -167,6 +179,16 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Commute (mins)</label><input type="number" id="a_commute" value=""></div>
       </div>
 
+      <div class="field-row" style="align-items:flex-end;">
+        <div class="field"><label>Daft.ie listing URL</label><input type="text" id="a_daft" value="" placeholder="https://www.daft.ie/..."></div>
+        <a id="a_daft_link" href="#" target="_blank" rel="noopener" class="daft-btn" style="display:none;">View listing ↗</a>
+      </div>
+      <div class="field">
+        <label>Photo URLs (one per line — right-click a Daft photo → Copy image address)</label>
+        <textarea id="a_photos" placeholder="https://media.daft.ie/...jpg&#10;https://media.daft.ie/...jpg" style="min-height:44px;"></textarea>
+        <div class="photo-strip" id="a_photo_strip"></div>
+      </div>
+
       <div class="section-title">Once-off buying costs</div>
       <table class="costs">
         <tr><td>Offer price</td><td class="amt" id="a_price_disp">—</td></tr>
@@ -224,6 +246,16 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <div class="field-row">
         <div class="field"><label>BER Rating</label><input type="text" id="b_ber" value=""></div>
         <div class="field"><label>Commute (mins)</label><input type="number" id="b_commute" value=""></div>
+      </div>
+
+      <div class="field-row" style="align-items:flex-end;">
+        <div class="field"><label>Daft.ie listing URL</label><input type="text" id="b_daft" value="" placeholder="https://www.daft.ie/..."></div>
+        <a id="b_daft_link" href="#" target="_blank" rel="noopener" class="daft-btn" style="display:none;">View listing ↗</a>
+      </div>
+      <div class="field">
+        <label>Photo URLs (one per line — right-click a Daft photo → Copy image address)</label>
+        <textarea id="b_photos" placeholder="https://media.daft.ie/...jpg&#10;https://media.daft.ie/...jpg" style="min-height:44px;"></textarea>
+        <div class="photo-strip" id="b_photo_strip"></div>
       </div>
 
       <div class="section-title">Once-off buying costs</div>
@@ -431,19 +463,41 @@ function renderVerdictTop(a, b){
   document.getElementById('v_reason').textContent = reason;
 }
 
+function renderMedia(p){
+  const url = document.getElementById(`${p}_daft`).value.trim();
+  const linkEl = document.getElementById(`${p}_daft_link`);
+  if(url){
+    linkEl.href = url;
+    linkEl.style.display = 'inline-block';
+  } else {
+    linkEl.style.display = 'none';
+  }
+
+  const raw = document.getElementById(`${p}_photos`).value;
+  const urls = raw.split('\n').map(s=>s.trim()).filter(Boolean);
+  const strip = document.getElementById(`${p}_photo_strip`);
+  if(urls.length===0){
+    strip.innerHTML = '<div class="photo-empty">No photos added yet</div>';
+  } else {
+    strip.innerHTML = urls.map(u=>`<img src="${u.replace(/"/g,'&quot;')}" alt="Property photo" onerror="this.style.display='none'">`).join('');
+  }
+}
+
 function recalc(){
   const a = calcSide('a');
   const b = calcSide('b');
   renderVerdictTop(a, b);
+  renderMedia('a');
+  renderMedia('b');
   return {a,b};
 }
 
 // ---- Persistence (Supabase) ----
 const fieldIds = [
-  'a_name','a_addr','a_asking','a_bid','a_mortgage','a_savings','a_size','a_beds','a_comp','a_ber','a_commute',
+  'a_name','a_addr','a_asking','a_bid','a_mortgage','a_savings','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
   'a_legal','a_survey','a_reg','a_bankfee','a_move','a_furnish',
   'a_rate','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
-  'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute',
+  'b_name','b_addr','b_asking','b_bid','b_mortgage','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_furnish',
   'b_rate','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes'
 ];
@@ -512,7 +566,7 @@ async function loadSaved(){
 
 // Wire up recalculation
 ['a','b'].forEach(p=>{
-  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','furnish','rate','term','lpt','mgmt','ins','mpi'].forEach(f=>{
+  ['asking','bid','mortgage','savings','legal','survey','reg','bankfee','move','furnish','rate','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
