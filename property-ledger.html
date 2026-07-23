@@ -218,6 +218,14 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
   font-size:0.78rem; font-weight:600; color:var(--muted); cursor:pointer; font-family:'Inter',sans-serif;
 }
 .signout-btn:hover{color:var(--ink); border-color:var(--ink);}
+
+.savings-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+.savings-row input[type=text]{flex:1.4;}
+.savings-row input[type=number]{flex:1; text-align:right;}
+.savings-row .remove-src{
+  background:none; border:none; color:var(--faint); font-size:1.1rem; cursor:pointer; padding:0 4px; line-height:1;
+}
+.savings-row .remove-src:hover{color:#DC2626;}
 </style>
 </head>
 <body>
@@ -523,6 +531,20 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     </div>
 
     <div class="dossier" style="margin-bottom:20px;">
+      <div class="dossier-label">Your Savings</div>
+      <div class="sub" style="margin-bottom:14px;">Add every place you're holding savings. An emergency fund of 6 months' salary is set aside automatically — only what's left over counts toward the house.</div>
+      <div id="savingsSourcesList"></div>
+      <button class="mini-btn" style="margin-top:6px; text-decoration:none; border:1px solid var(--accent); border-radius:6px; padding:5px 10px;" onclick="addSavingsSource()">+ Add source</button>
+      <input type="hidden" id="savings_sources_data" value="">
+
+      <table class="costs" style="margin-top:16px;">
+        <tr><td>Total across all sources</td><td class="amt" id="savingsTotal">—</td></tr>
+        <tr><td>Emergency fund reserved (6 × monthly salary)</td><td class="amt" id="savingsEmergency">—</td></tr>
+        <tr class="total"><td>Usable toward a house</td><td class="amt" id="savingsUsable">—</td></tr>
+      </table>
+    </div>
+
+    <div class="dossier" style="margin-bottom:20px;">
       <div class="dossier-label">Other Monthly Spending</div>
       <div class="sub" style="margin-bottom:14px;">Everything outside the property costs — those get pulled in automatically below.</div>
       <table class="costs">
@@ -809,9 +831,11 @@ function renderMedia(p){
   }
 }
 
+let lastA = {totalMonthly:0}, lastB = {totalMonthly:0};
 function recalc(){
   const a = calcSide('a');
   const b = calcSide('b');
+  lastA = a; lastB = b;
   renderVerdictTop(a, b);
   renderMedia('a');
   renderMedia('b');
@@ -819,8 +843,57 @@ function recalc(){
   return {a,b};
 }
 
+// ---- Savings sources (dynamic list) ----
+let savingsSources = [];
+
+function renderSavingsSources(){
+  const list = document.getElementById('savingsSourcesList');
+  list.innerHTML = savingsSources.map((s, i) => `
+    <div class="savings-row">
+      <input type="text" placeholder="Source name (e.g. Revolut, Credit Union)" value="${(s.name||'').replace(/"/g,'&quot;')}" oninput="updateSavingsSource(${i}, 'name', this.value)">
+      <input type="number" placeholder="Amount €" value="${s.amount||''}" oninput="updateSavingsSource(${i}, 'amount', this.value)">
+      <button class="remove-src" onclick="removeSavingsSource(${i})" title="Remove">×</button>
+    </div>
+  `).join('');
+  syncSavingsData();
+}
+
+function addSavingsSource(){
+  savingsSources.push({name:'', amount:0});
+  renderSavingsSources();
+}
+
+function removeSavingsSource(i){
+  savingsSources.splice(i, 1);
+  renderSavingsSources();
+  calcBudget(lastA, lastB);
+}
+
+function updateSavingsSource(i, field, value){
+  savingsSources[i][field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  syncSavingsData();
+  calcBudget(lastA, lastB);
+}
+
+function syncSavingsData(){
+  document.getElementById('savings_sources_data').value = JSON.stringify(savingsSources);
+  scheduleSave();
+}
+
+function calcSavingsSummary(){
+  const total = savingsSources.reduce((s,i)=>s+(i.amount||0), 0);
+  const salary = num('bud_salary');
+  const emergency = salary * 6;
+  const usable = Math.max(0, total - emergency);
+  document.getElementById('savingsTotal').textContent = total ? fmt(total) : '—';
+  document.getElementById('savingsEmergency').textContent = salary ? fmt(emergency) : '—';
+  document.getElementById('savingsUsable').textContent = salary ? fmt(usable) : (total ? fmt(total) : '—');
+  return {total, emergency, usable};
+}
+
 function calcBudget(a, b){
   const salary = num('bud_salary');
+  calcSavingsSummary();
   const other = num('bud_groceries') + num('bud_transport') + num('bud_utilities') + num('bud_subs') +
                 num('bud_cosmetics') + num('bud_leisure') + num('bud_savings_contrib') + num('bud_other');
   document.getElementById('bud_other_total').textContent = other ? fmt(other) : '—';
@@ -983,7 +1056,7 @@ const fieldIds = [
   'b_name','b_addr','b_asking','b_bid','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_green','b_greendisc','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
-  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other'
+  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data'
 ];
 criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
 
@@ -1008,6 +1081,13 @@ function applyData(data){
     const w = document.getElementById(`w_${c.key}`);
     if(w) document.getElementById(`w_${c.key}_disp`).textContent = 'wt ' + w.value;
   });
+  try{
+    const raw = document.getElementById('savings_sources_data').value;
+    savingsSources = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    savingsSources = [];
+  }
+  renderSavingsSources();
   recalc();
 }
 
@@ -1048,6 +1128,8 @@ async function loadSaved(){
     const w = document.getElementById(`w_${c.key}`);
     if(w) document.getElementById(`w_${c.key}_disp`).textContent = 'wt ' + w.value;
   });
+  if(savingsSources.length === 0) savingsSources = [{name:'', amount:0}];
+  renderSavingsSources();
   recalc();
 }
 
@@ -1063,7 +1145,7 @@ document.getElementById('g_mortgage').addEventListener('input', recalc);
     if(el) el.addEventListener('input', recalc);
   });
 });
-['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other'].forEach(id=>{
+['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('input', recalc);
 });
