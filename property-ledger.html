@@ -371,6 +371,9 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Savings available € <span style="font-weight:400; text-transform:none; color:var(--faint);">(auto from Savings tab)</span></label><input type="number" id="a_savings" value="" readonly style="background:var(--bg); color:var(--muted);"></div>
       </div>
       <div class="field-row">
+        <div class="field"><label>How much savings I want to add €</label><input type="number" id="a_savings_want" value=""></div>
+      </div>
+      <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="a_size" value=""></div>
         <div class="field"><label>Beds</label><input type="number" id="a_beds" value="2"></div>
       </div>
@@ -471,6 +474,9 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="field"><label>Savings available € <span style="font-weight:400; text-transform:none; color:var(--faint);">(auto from Savings tab)</span></label><input type="number" id="b_savings" value="" readonly style="background:var(--bg); color:var(--muted);"></div>
       </div>
       <div class="field-row">
+        <div class="field"><label>How much savings I want to add €</label><input type="number" id="b_savings_want" value=""></div>
+      </div>
+      <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="b_size" value=""></div>
         <div class="field"><label>Beds</label><input type="number" id="b_beds" value=""></div>
       </div>
@@ -568,6 +574,9 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       </div>
       <div class="field-row">
         <div class="field"><label>Savings available € <span style="font-weight:400; text-transform:none; color:var(--faint);">(auto from Savings tab)</span></label><input type="number" id="c_savings" value="" readonly style="background:var(--bg); color:var(--muted);"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>How much savings I want to add €</label><input type="number" id="c_savings_want" value=""></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Size (sqm)</label><input type="number" id="c_size" value=""></div>
@@ -1014,13 +1023,18 @@ function calcSide(p){
   document.getElementById(`${p}_m_mpi`).textContent = mpi ? fmt(mpi/12) : '—';
   document.getElementById(`${p}_m_total`).textContent = totalMonthly ? fmt(totalMonthly) : '—';
 
-  const savings = num(`${p}_savings`);
+  const savingsAvailable = num(`${p}_savings`);
+  const savingsWant = num(`${p}_savings_want`);
   const affordText = (()=>{
-    if(savings<=0) return '';
-    const cashShort = total - savings;
-    return cashShort>0
-      ? `Cash needed exceeds savings by ${fmt(cashShort)}`
-      : `Cash needed covered — ${fmt(savings-total)} savings left over`;
+    if(savingsWant<=0) return '';
+    const cashShort = total - savingsWant;
+    let msg = cashShort>0
+      ? `Cash needed exceeds what you're adding by ${fmt(cashShort)}`
+      : `Covered — ${fmt(savingsWant-total)} left over from what you're adding`;
+    if(savingsAvailable>0 && savingsWant > savingsAvailable){
+      msg += ` · Note: that's ${fmt(savingsWant-savingsAvailable)} more than your usable savings`;
+    }
+    return msg;
   })();
   const affordEl = document.getElementById(`${p}_afford`);
   if(affordEl) affordEl.innerHTML = affordText;
@@ -1497,13 +1511,13 @@ function applyFurnishBudget(p){
 // ---- Persistence (Supabase) ----
 const fieldIds = [
   'g_mortgage',
-  'a_name','a_addr','a_asking','a_bid','a_savings','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
+  'a_name','a_addr','a_asking','a_bid','a_savings','a_savings_want','a_size','a_beds','a_comp','a_ber','a_commute','a_daft','a_photos',
   'a_legal','a_survey','a_reg','a_bankfee','a_move','a_repairs','a_furnish',
   'a_rate','a_green','a_greendisc','a_term','a_lpt','a_mgmt','a_ins','a_mpi','a_notes',
-  'b_name','b_addr','b_asking','b_bid','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
+  'b_name','b_addr','b_asking','b_bid','b_savings','b_savings_want','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_green','b_greendisc','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
-  'c_name','c_addr','c_asking','c_bid','c_savings','c_size','c_beds','c_comp','c_ber','c_commute','c_daft','c_photos',
+  'c_name','c_addr','c_asking','c_bid','c_savings','c_savings_want','c_size','c_beds','c_comp','c_ber','c_commute','c_daft','c_photos',
   'c_legal','c_survey','c_reg','c_bankfee','c_move','c_repairs','c_furnish',
   'c_rate','c_green','c_greendisc','c_term','c_lpt','c_mgmt','c_ins','c_mpi','c_notes',
   'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay','c_overpay'
@@ -1586,7 +1600,7 @@ async function loadSaved(){
 // Wire up recalculation
 document.getElementById('g_mortgage').addEventListener('input', recalc);
 ['a','b','c'].forEach(p=>{
-  ['asking','bid','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','green','greendisc','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
+  ['asking','bid','savings','savings_want','legal','survey','reg','bankfee','move','repairs','furnish','rate','green','greendisc','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
   });
