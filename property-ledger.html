@@ -975,8 +975,16 @@ function calcSide(p){
   document.getElementById(`${p}_price_disp`).textContent = fmt(price);
 
   const mortgageAvail = num('g_mortgage');
-  // Loan used: capped at approved mortgage, else assume 90% LTV as a working default
-  const loanUsed = price>0 ? (mortgageAvail>0 ? Math.min(mortgageAvail, price) : price*0.9) : 0;
+  // Loan used: if she's entered how much savings she wants to add, that sets the down payment directly.
+  // Otherwise fall back to mortgage AIP cap, or a 90% LTV assumption as a working default.
+  const savingsWantForLoan = num(`${p}_savings_want`);
+  let loanUsed;
+  if(savingsWantForLoan > 0 && price > 0){
+    loanUsed = Math.max(0, price - savingsWantForLoan);
+    if(mortgageAvail > 0) loanUsed = Math.min(loanUsed, mortgageAvail);
+  } else {
+    loanUsed = price>0 ? (mortgageAvail>0 ? Math.min(mortgageAvail, price) : price*0.9) : 0;
+  }
   const priceGap = Math.max(0, price - loanUsed);
 
   // Down payment vs loan as % of offer price
