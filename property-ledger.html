@@ -828,9 +828,13 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
             <div class="field"><label>Extra monthly overpayment €</label><input type="number" id="a_overpay" value="0"></div>
           </div>
           <table class="costs">
+            <tr><td>Sale price</td><td class="amt" id="a_op_price">—</td></tr>
+            <tr><td>Savings you're putting in</td><td class="amt" id="a_op_savingsin">—</td></tr>
+            <tr class="computed"><td>Loan principal you'll owe</td><td class="amt" id="a_op_principal">—</td></tr>
             <tr><td>Standard monthly repayment</td><td class="amt" id="a_op_standard">—</td></tr>
             <tr><td>Standard payoff time</td><td class="amt" id="a_op_stdterm">—</td></tr>
             <tr><td>Total interest (standard)</td><td class="amt" id="a_op_stdinterest">—</td></tr>
+            <tr class="total"><td>Total repayment (principal + interest)</td><td class="amt" id="a_op_totalrepay">—</td></tr>
             <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="a_op_newterm">—</td></tr>
             <tr class="computed"><td>Time saved</td><td class="amt" id="a_op_timesaved">—</td></tr>
             <tr class="total"><td>Interest saved</td><td class="amt" id="a_op_interestsaved">—</td></tr>
@@ -842,9 +846,13 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
             <div class="field"><label>Extra monthly overpayment €</label><input type="number" id="b_overpay" value="0"></div>
           </div>
           <table class="costs">
+            <tr><td>Sale price</td><td class="amt" id="b_op_price">—</td></tr>
+            <tr><td>Savings you're putting in</td><td class="amt" id="b_op_savingsin">—</td></tr>
+            <tr class="computed"><td>Loan principal you'll owe</td><td class="amt" id="b_op_principal">—</td></tr>
             <tr><td>Standard monthly repayment</td><td class="amt" id="b_op_standard">—</td></tr>
             <tr><td>Standard payoff time</td><td class="amt" id="b_op_stdterm">—</td></tr>
             <tr><td>Total interest (standard)</td><td class="amt" id="b_op_stdinterest">—</td></tr>
+            <tr class="total"><td>Total repayment (principal + interest)</td><td class="amt" id="b_op_totalrepay">—</td></tr>
             <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="b_op_newterm">—</td></tr>
             <tr class="computed"><td>Time saved</td><td class="amt" id="b_op_timesaved">—</td></tr>
             <tr class="total"><td>Interest saved</td><td class="amt" id="b_op_interestsaved">—</td></tr>
@@ -856,9 +864,13 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
             <div class="field"><label>Extra monthly overpayment €</label><input type="number" id="c_overpay" value="0"></div>
           </div>
           <table class="costs">
+            <tr><td>Sale price</td><td class="amt" id="c_op_price">—</td></tr>
+            <tr><td>Savings you're putting in</td><td class="amt" id="c_op_savingsin">—</td></tr>
+            <tr class="computed"><td>Loan principal you'll owe</td><td class="amt" id="c_op_principal">—</td></tr>
             <tr><td>Standard monthly repayment</td><td class="amt" id="c_op_standard">—</td></tr>
             <tr><td>Standard payoff time</td><td class="amt" id="c_op_stdterm">—</td></tr>
             <tr><td>Total interest (standard)</td><td class="amt" id="c_op_stdinterest">—</td></tr>
+            <tr class="total"><td>Total repayment (principal + interest)</td><td class="amt" id="c_op_totalrepay">—</td></tr>
             <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="c_op_newterm">—</td></tr>
             <tr class="computed"><td>Time saved</td><td class="amt" id="c_op_timesaved">—</td></tr>
             <tr class="total"><td>Interest saved</td><td class="amt" id="c_op_interestsaved">—</td></tr>
@@ -1245,16 +1257,22 @@ function fmtYearsMonths(totalMonths){
 
 function calcOverpayment(p, side){
   if(!side.loanUsed || !side.monthly || !side.termYears) {
-    ['standard','stdterm','stdinterest','newterm','timesaved','interestsaved'].forEach(k=>{
+    ['price','savingsin','principal','standard','stdterm','stdinterest','totalrepay','newterm','timesaved','interestsaved'].forEach(k=>{
       document.getElementById(`${p}_op_${k}`).textContent = '—';
     });
     return;
   }
+  const savingsWant = num(`${p}_savings_want`);
+  document.getElementById(`${p}_op_price`).textContent = fmt(side.price);
+  document.getElementById(`${p}_op_savingsin`).textContent = savingsWant ? fmt(savingsWant) : '—';
+  document.getElementById(`${p}_op_principal`).textContent = fmt(side.loanUsed);
+
   const stdMonths = side.termYears*12;
   const stdInterest = (side.monthly*stdMonths) - side.loanUsed;
   document.getElementById(`${p}_op_standard`).textContent = fmt(side.monthly);
   document.getElementById(`${p}_op_stdterm`).textContent = fmtYearsMonths(stdMonths);
   document.getElementById(`${p}_op_stdinterest`).textContent = fmt(stdInterest);
+  document.getElementById(`${p}_op_totalrepay`).textContent = fmt(side.loanUsed + stdInterest);
 
   const extra = num(`${p}_overpay`);
   if(extra <= 0){
