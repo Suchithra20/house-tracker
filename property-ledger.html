@@ -68,8 +68,9 @@ h1{font-weight:800; font-size:2rem; margin:0; letter-spacing:-0.02em;}
 .vg-row{display:flex; justify-content:space-between; font-size:0.92rem; padding:3px 0; font-variant-numeric:tabular-nums;}
 .vg-row.win{color:#6EE7A0; font-weight:700;}
 
-.cols{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
-@media(max-width:860px){.cols{grid-template-columns:1fr;}}
+.cols{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;}
+@media(max-width:1100px){.cols{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.cols{grid-template-columns:1fr;}}
 
 .dossier{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); position:relative; padding:24px;}
 .dossier-label{
@@ -143,11 +144,11 @@ textarea:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px va
 .score-panel{margin-top:24px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:24px;}
 .score-panel h2{font-weight:700; font-size:1.15rem; margin:0 0 6px; letter-spacing:-0.01em;}
 .score-panel .sub{margin-bottom:20px;}
-.crit-row{display:grid; grid-template-columns:170px 1fr 56px 56px 56px; gap:12px; align-items:center; margin-bottom:12px; font-size:0.85rem;}
+.crit-row{display:grid; grid-template-columns:170px 1fr 56px 56px 56px 56px; gap:12px; align-items:center; margin-bottom:12px; font-size:0.85rem;}
 .crit-row .name{font-size:0.85rem; font-weight:500; color:var(--ink);}
 .crit-row input[type=range]{width:100%; accent-color:var(--accent);}
 .crit-row input[type=number]{width:52px; padding:4px 4px; text-align:center;}
-.crit-head{display:grid; grid-template-columns:170px 1fr 56px 56px 56px; gap:12px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--faint); margin-bottom:10px;}
+.crit-head{display:grid; grid-template-columns:170px 1fr 56px 56px 56px 56px; gap:12px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--faint); margin-bottom:10px;}
 
 .ai-score-bar{display:flex; gap:10px; margin-top:18px; padding-top:18px; border-top:1px solid var(--border); flex-wrap:wrap;}
 .ai-btn{
@@ -307,16 +308,19 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
         <div class="vg-label">Cash needed at closing</div>
         <div class="vg-row" id="vg_cash_a"><span>A</span><span>—</span></div>
         <div class="vg-row" id="vg_cash_b"><span>B</span><span>—</span></div>
+        <div class="vg-row" id="vg_cash_c"><span>C</span><span>—</span></div>
       </div>
       <div class="vg-card">
         <div class="vg-label">Monthly outgoings</div>
         <div class="vg-row" id="vg_monthly_a"><span>A</span><span>—</span></div>
         <div class="vg-row" id="vg_monthly_b"><span>B</span><span>—</span></div>
+        <div class="vg-row" id="vg_monthly_c"><span>C</span><span>—</span></div>
       </div>
       <div class="vg-card">
         <div class="vg-label">Weighted score</div>
         <div class="vg-row" id="vg_score_a"><span>A</span><span>—</span></div>
         <div class="vg-row" id="vg_score_b"><span>B</span><span>—</span></div>
+        <div class="vg-row" id="vg_score_c"><span>C</span><span>—</span></div>
       </div>
     </div>
   </div>
@@ -529,6 +533,105 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
 
       <div class="note"><label>Pros / cons notes</label><textarea id="b_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
     </div>
+    <!-- PROPERTY C -->
+    <div class="dossier">
+      <div class="dossier-label">Property C</div>
+
+      <div class="field-row">
+        <div class="field"><label>Nickname</label><input type="text" id="c_name" value="Property C"></div>
+      </div>
+
+      <div class="savings-highlight">
+        <span class="sh-label">Savings you need to put in</span>
+        <span class="sh-amount" id="c_savings_highlight">—</span>
+      </div>
+
+      <div class="dp-ratio-bar" id="c_dp_bar">
+        <div class="dp-ratio-labels">
+          <span id="c_dp_pct">— % down</span>
+          <span id="c_loan_pct">— % financed</span>
+        </div>
+        <div class="dp-ratio-track"><div class="dp-ratio-fill" id="c_dp_fill" style="width:0%;"></div></div>
+      </div>
+
+      <div class="emi-highlight" id="c_emi_highlight">
+        <span class="sh-label">Of your monthly salary goes to EMI</span>
+        <span class="sh-amount" id="c_emi_pct">—</span>
+      </div>
+
+      <div class="field-row">
+        <div class="field"><label>Address</label><input type="text" id="c_addr" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Asking Price €</label><input type="number" id="c_asking" value="0"></div>
+        <div class="field"><label>Your Offer €</label><input type="number" id="c_bid" value="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Savings available € <span style="font-weight:400; text-transform:none; color:var(--faint);">(auto from Savings tab)</span></label><input type="number" id="c_savings" value="" readonly style="background:var(--bg); color:var(--muted);"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Size (sqm)</label><input type="number" id="c_size" value=""></div>
+        <div class="field"><label>Beds</label><input type="number" id="c_beds" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Comparable sale (address, price, date)</label><input type="text" id="c_comp" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>BER Rating</label><input type="text" id="c_ber" value=""></div>
+        <div class="field"><label>Commute (mins)</label><input type="number" id="c_commute" value=""></div>
+      </div>
+
+      <div class="field-row" style="align-items:flex-end;">
+        <div class="field"><label>Daft.ie listing URL</label><input type="text" id="c_daft" value="" placeholder="https://www.daft.ie/..."></div>
+        <a id="c_daft_link" href="#" target="_blank" rel="noopener" class="daft-btn" style="display:none;">View listing ↗</a>
+      </div>
+      <div class="field">
+        <label>Photo URLs (one per line — right-click a Daft photo → Copy image address)</label>
+        <textarea id="c_photos" placeholder="https://media.daft.ie/...jpg&#10;https://media.daft.ie/...jpg" style="min-height:44px;"></textarea>
+        <div class="photo-strip" id="c_photo_strip"></div>
+      </div>
+
+      <div class="section-title">Once-off buying costs</div>
+      <table class="costs">
+        <tr><td>Offer price</td><td class="amt" id="c_price_disp">—</td></tr>
+        <tr><td>Stamp duty (auto)</td><td class="amt" id="c_stamp">—</td></tr>
+        <tr><td>Legal / solicitor fees</td><td class="amt"><input type="number" id="c_legal" value="2500"></td></tr>
+        <tr><td>Structural survey</td><td class="amt"><input type="number" id="c_survey" value="450"></td></tr>
+        <tr><td>Registration fee</td><td class="amt"><input type="number" id="c_reg" value="600"></td></tr>
+        <tr><td>Bank valuation / arrangement fee</td><td class="amt"><input type="number" id="c_bankfee" value="150"></td></tr>
+        <tr><td>Moving costs</td><td class="amt"><input type="number" id="c_move" value="500"></td></tr>
+        <tr><td>Repairs / renovation budget</td><td class="amt"><input type="number" id="c_repairs" value="0"></td></tr>
+        <tr><td>Immediate furnishing / snag budget <button class="mini-btn" onclick="toggleFurnish('b')">breakdown</button></td><td class="amt"><input type="number" id="c_furnish" value="0"></td></tr>
+        <tr class="total"><td>Total cash needed at closing</td><td class="amt" id="c_total">—</td></tr>
+      </table>
+      <div class="furnish-panel" id="c_furnish_panel" style="display:none;"></div>
+
+      <div class="section-title">Ongoing annual costs</div>
+      <table class="costs">
+        <tr><td>Mortgage rate (%)</td><td class="amt"><input type="number" id="c_rate" value="3.9" step="0.1"></td></tr>
+        <tr><td><label style="display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--ink); text-transform:none; font-weight:400;"><input type="checkbox" id="c_green" style="width:auto;"> Green mortgage rate applies (BER B3+)</label></td><td class="amt"><input type="number" id="c_greendisc" value="0.2" step="0.05" title="Discount %"></td></tr>
+        <tr class="computed"><td>Effective rate used</td><td class="amt" id="c_effrate">—</td></tr>
+        <tr><td>Term (years)</td><td class="amt"><input type="number" id="c_term" value="30"></td></tr>
+        <tr><td>Est. monthly mortgage repayment</td><td class="amt" id="c_monthly">—</td></tr>
+        <tr><td>Local Property Tax (annual)</td><td class="amt"><input type="number" id="c_lpt" value=""></td></tr>
+        <tr><td>Management / service charge (annual)</td><td class="amt"><input type="number" id="c_mgmt" value=""></td></tr>
+        <tr><td>Home insurance (annual)</td><td class="amt"><input type="number" id="c_ins" value=""></td></tr>
+        <tr><td>Mortgage protection insurance (annual)</td><td class="amt"><input type="number" id="c_mpi" value=""></td></tr>
+      </table>
+
+      <div class="section-title">Monthly costs</div>
+      <table class="costs">
+        <tr><td>Mortgage repayment</td><td class="amt" id="c_m_mortgage">—</td></tr>
+        <tr><td>Local Property Tax</td><td class="amt" id="c_m_lpt">—</td></tr>
+        <tr><td>Management / service charge</td><td class="amt" id="c_m_mgmt">—</td></tr>
+        <tr><td>Home insurance</td><td class="amt" id="c_m_ins">—</td></tr>
+        <tr><td>Mortgage protection insurance</td><td class="amt" id="c_m_mpi">—</td></tr>
+        <tr class="total"><td>Total monthly outgoings</td><td class="amt" id="c_m_total">—</td></tr>
+      </table>
+      <div class="afford-note" id="c_afford"></div>
+
+      <div class="note"><label>Pros / cons notes</label><textarea id="c_notes" placeholder="What tips this one for you, what worries you..."></textarea></div>
+    </div>
   </div>
 
   <!-- SCORING -->
@@ -536,12 +639,13 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
     <h2>Weigh the evidence</h2>
     <div class="sub">Score each property 1–10 on what actually matters to you. Adjust the weight if a factor should count more. The verdict banner up top updates as you go.</div>
 
-    <div class="crit-head"><div>Criterion</div><div>Weight</div><div>Prop A</div><div>Prop B</div><div></div></div>
+    <div class="crit-head"><div>Criterion</div><div>Weight</div><div>Prop A</div><div>Prop B</div><div>Prop C</div><div></div></div>
     <div id="critRows"></div>
 
     <div class="ai-score-bar">
       <button class="ai-btn" onclick="applyAIScores('a')">Apply AI scores — Property A</button>
       <button class="ai-btn" onclick="applyAIScores('b')">Apply AI scores — Property B</button>
+      <button class="ai-btn" onclick="applyAIScores('c')">Apply AI scores — Property C</button>
       <button class="ai-btn secondary" onclick="toggleRationale()">View rationale &amp; sources</button>
     </div>
     <div class="rationale-panel" id="rationalePanel" style="display:none;">
@@ -629,6 +733,13 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
           <div class="vg-row"><span>Other spending</span><span id="budB_other">—</span></div>
           <div class="vg-row win" id="budB_left"><span>Left over</span><span>—</span></div>
         </div>
+        <div class="vg-card">
+          <div class="vg-label" id="budC_name">Property C</div>
+          <div class="vg-row"><span>Take-home income</span><span id="budC_income">—</span></div>
+          <div class="vg-row"><span>Housing costs</span><span id="budC_housing">—</span></div>
+          <div class="vg-row"><span>Other spending</span><span id="budC_other">—</span></div>
+          <div class="vg-row win" id="budC_left"><span>Left over</span><span>—</span></div>
+        </div>
       </div>
       <div class="verdict-reason" id="budgetReason" style="margin-top:16px;"></div>
     </div>
@@ -666,6 +777,7 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
       <table class="costs">
         <tr><td>Property A — housing cost as % of income</td><td class="amt" id="healthHousingA">—</td></tr>
         <tr><td>Property B — housing cost as % of income</td><td class="amt" id="healthHousingB">—</td></tr>
+        <tr><td>Property C — housing cost as % of income</td><td class="amt" id="healthHousingC">—</td></tr>
       </table>
 
       <button class="mini-btn" style="margin-top:10px;" onclick="toggleHealthDetail()">How this is scored</button>
@@ -727,6 +839,20 @@ footer{margin-top:36px; font-size:0.78rem; color:var(--faint); border-top:1px so
             <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="b_op_newterm">—</td></tr>
             <tr class="computed"><td>Time saved</td><td class="amt" id="b_op_timesaved">—</td></tr>
             <tr class="total"><td>Interest saved</td><td class="amt" id="b_op_interestsaved">—</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="dossier-label" style="margin-bottom:10px;">Property C</div>
+          <div class="field-row">
+            <div class="field"><label>Extra monthly overpayment €</label><input type="number" id="c_overpay" value="0"></div>
+          </div>
+          <table class="costs">
+            <tr><td>Standard monthly repayment</td><td class="amt" id="c_op_standard">—</td></tr>
+            <tr><td>Standard payoff time</td><td class="amt" id="c_op_stdterm">—</td></tr>
+            <tr><td>Total interest (standard)</td><td class="amt" id="c_op_stdinterest">—</td></tr>
+            <tr class="computed"><td>With overpayment: new payoff time</td><td class="amt" id="c_op_newterm">—</td></tr>
+            <tr class="computed"><td>Time saved</td><td class="amt" id="c_op_timesaved">—</td></tr>
+            <tr class="total"><td>Interest saved</td><td class="amt" id="c_op_interestsaved">—</td></tr>
           </table>
         </div>
       </div>
@@ -817,6 +943,7 @@ criteria.forEach(c=>{
     <input type="range" min="1" max="5" value="3" id="w_${c.key}">
     <input type="number" min="1" max="10" value="5" id="a_s_${c.key}">
     <input type="number" min="1" max="10" value="5" id="b_s_${c.key}">
+    <input type="number" min="1" max="10" value="5" id="c_s_${c.key}">
     <div style="font-size:0.72rem;color:var(--faint);" id="w_${c.key}_disp">wt 3</div>
   `;
   critRows.appendChild(row);
@@ -911,67 +1038,66 @@ function weightedScore(p){
   return sumW ? sum/sumW : 0;
 }
 
-function renderVerdictTop(a, b){
-  const nameA = document.getElementById('a_name').value || 'Property A';
-  const nameB = document.getElementById('b_name').value || 'Property B';
-  const priceAset = num('a_bid') || num('a_asking');
-  const priceBset = num('b_bid') || num('b_asking');
+function renderVerdictTop(a, b, c){
+  const props = [
+    {key:'a', name: document.getElementById('a_name').value || 'Property A', data:a},
+    {key:'b', name: document.getElementById('b_name').value || 'Property B', data:b},
+    {key:'c', name: document.getElementById('c_name').value || 'Property C', data:c}
+  ];
 
-  document.getElementById('vg_cash_a').innerHTML = `<span>${nameA}</span><span>${fmt(a.total)}</span>`;
-  document.getElementById('vg_cash_b').innerHTML = `<span>${nameB}</span><span>${fmt(b.total)}</span>`;
-  document.getElementById('vg_monthly_a').innerHTML = `<span>${nameA}</span><span>${a.totalMonthly? fmt(a.totalMonthly)+'/mo' : '—'}</span>`;
-  document.getElementById('vg_monthly_b').innerHTML = `<span>${nameB}</span><span>${b.totalMonthly? fmt(b.totalMonthly)+'/mo' : '—'}</span>`;
+  props.forEach(p=>{
+    const priceSet = num(`${p.key}_bid`) || num(`${p.key}_asking`);
+    p.priceSet = !!priceSet;
+    p.score = weightedScore(p.key);
+    document.getElementById(`vg_cash_${p.key}`).innerHTML = `<span>${p.name}</span><span>${p.priceSet ? fmt(p.data.total) : '—'}</span>`;
+    document.getElementById(`vg_monthly_${p.key}`).innerHTML = `<span>${p.name}</span><span>${(p.priceSet && p.data.totalMonthly) ? fmt(p.data.totalMonthly)+'/mo' : '—'}</span>`;
+    document.getElementById(`vg_score_${p.key}`).innerHTML = `<span>${p.name}</span><span>${p.priceSet ? p.score.toFixed(1) : '—'}</span>`;
+  });
 
-  if(!priceAset || !priceBset){
-    document.getElementById('v_winner').textContent = 'Fill in both properties';
-    document.getElementById('v_reason').textContent = 'Add an offer price for both to see a verdict.';
-    document.getElementById('vg_score_a').innerHTML = `<span>${nameA}</span><span>—</span>`;
-    document.getElementById('vg_score_b').innerHTML = `<span>${nameB}</span><span>—</span>`;
+  const active = props.filter(p=>p.priceSet);
+
+  // Highlight best figure among active properties for each metric
+  const setWin = (idBase, getVal, betterFn)=>{
+    props.forEach(p=> document.getElementById(`${idBase}_${p.key}`).classList.remove('win'));
+    if(active.length < 2) return;
+    const best = active.reduce((b1,p)=> betterFn(getVal(p), getVal(b1)) ? p : b1);
+    document.getElementById(`${idBase}_${best.key}`).classList.add('win');
+  };
+  setWin('vg_cash', p=>p.data.total, (v,best)=> v < best);
+  setWin('vg_monthly', p=>p.data.totalMonthly||Infinity, (v,best)=> v < best);
+  setWin('vg_score', p=>p.score, (v,best)=> v > best);
+
+  if(active.length < 2){
+    document.getElementById('v_winner').textContent = 'Fill in at least two properties';
+    document.getElementById('v_reason').textContent = 'Add an offer price for at least two properties to see a verdict.';
     return;
   }
 
-  const scoreA = weightedScore('a');
-  const scoreB = weightedScore('b');
-  document.getElementById('vg_score_a').innerHTML = `<span>${nameA}</span><span>${scoreA.toFixed(1)}</span>`;
-  document.getElementById('vg_score_b').innerHTML = `<span>${nameB}</span><span>${scoreB.toFixed(1)}</span>`;
+  // Composite: score weighted heavily, cash as a tiebreak/adjustment
+  const cashValues = active.map(p=>p.data.total);
+  const minCash = Math.min(...cashValues), maxCash = Math.max(...cashValues);
+  const cashSpread = maxCash - minCash || 1;
+  active.forEach(p=>{
+    // normalize cash advantage 0-1 (1 = cheapest), blend with score (0-10 -> 0-1)
+    const cashNorm = 1 - ((p.data.total - minCash) / cashSpread);
+    p.composite = (p.score/10)*0.7 + cashNorm*0.3;
+  });
+  active.sort((x,y)=>y.composite - x.composite);
+  const winner = active[0];
+  const runnerUp = active[1];
 
-  // Highlight the better figure in each card
-  const setWin = (idBase, aVal, bVal, lowerIsBetter)=>{
-    const aEl = document.getElementById(`${idBase}_a`);
-    const bEl = document.getElementById(`${idBase}_b`);
-    aEl.classList.remove('win'); bEl.classList.remove('win');
-    if(aVal===bVal) return;
-    const aWins = lowerIsBetter ? aVal < bVal : aVal > bVal;
-    (aWins ? aEl : bEl).classList.add('win');
-  };
-  setWin('vg_cash', a.total, b.total, true);
-  setWin('vg_monthly', a.totalMonthly, b.totalMonthly, true);
-  setWin('vg_score', scoreA, scoreB, false);
+  const scoreDelta = winner.score - runnerUp.score;
+  const cashDelta = winner.data.total - runnerUp.data.total;
 
-  // Simple composite: normalize score (0-10) minus a cost penalty, pick higher
-  const cashDelta = a.total - b.total;
-  const monthlyDelta = a.totalMonthly - b.totalMonthly;
-  const scoreDelta = scoreA - scoreB;
-
-  let winnerName, reason;
-  if(Math.abs(scoreDelta) < 0.3 && Math.abs(cashDelta) < 5000){
-    winnerName = 'Too close to call';
-    reason = `Scores and cash needed are within a rounding error — let the notes below break the tie.`;
-  } else if(scoreDelta === 0){
-    winnerName = cashDelta < 0 ? nameA : nameB;
-    reason = `Same score — ${winnerName} needs ${fmt(Math.abs(cashDelta))} less cash upfront.`;
+  let reason;
+  if(Math.abs(winner.composite - runnerUp.composite) < 0.03){
+    reason = `Extremely close with ${runnerUp.name} — let the notes and your own priorities break the tie.`;
+  } else if(scoreDelta >= 0 && cashDelta <= 0){
+    reason = `Higher score${scoreDelta>0 ? ` (${scoreDelta.toFixed(1)} pts ahead of ${runnerUp.name})` : ''} and needs ${cashDelta<0?fmt(Math.abs(cashDelta))+' less':'the same'} cash upfront than ${runnerUp.name}.`;
   } else {
-    const scoreWinner = scoreDelta > 0 ? nameA : nameB;
-    const cashWinner = cashDelta < 0 ? nameA : nameB;
-    if(scoreWinner === cashWinner){
-      winnerName = scoreWinner;
-      reason = `Higher score (${(scoreDelta>0?scoreA:scoreB).toFixed(1)}) and needs less cash upfront.`;
-    } else {
-      winnerName = scoreWinner;
-      reason = `Scores higher (${Math.abs(scoreDelta).toFixed(1)} pts), but needs ${fmt(Math.abs(cashDelta))} more cash upfront than ${cashWinner} — weigh that tradeoff yourself.`;
-    }
+    reason = `Scores best overall, though it needs ${fmt(Math.abs(cashDelta))} more cash upfront than ${runnerUp.name} — weigh that tradeoff yourself.`;
   }
-  document.getElementById('v_winner').textContent = winnerName;
+  document.getElementById('v_winner').textContent = winner.name;
   document.getElementById('v_reason').textContent = reason;
 }
 
@@ -995,20 +1121,23 @@ function renderMedia(p){
   }
 }
 
-let lastA = {totalMonthly:0}, lastB = {totalMonthly:0};
+let lastA = {totalMonthly:0}, lastB = {totalMonthly:0}, lastC = {totalMonthly:0};
 function recalc(){
   const savingsSummary = calcSavingsSummary();
   document.getElementById('a_savings').value = savingsSummary.usable || 0;
   document.getElementById('b_savings').value = savingsSummary.usable || 0;
+  document.getElementById('c_savings').value = savingsSummary.usable || 0;
 
   const a = calcSide('a');
   const b = calcSide('b');
-  lastA = a; lastB = b;
-  renderVerdictTop(a, b);
+  const c = calcSide('c');
+  lastA = a; lastB = b; lastC = c;
+  renderVerdictTop(a, b, c);
   renderMedia('a');
   renderMedia('b');
-  calcBudget(a, b);
-  return {a,b};
+  renderMedia('c');
+  calcBudget(a, b, c);
+  return {a,b,c};
 }
 
 // ---- Savings sources (dynamic list) ----
@@ -1036,7 +1165,7 @@ function addSavingsSource(){
 function removeSavingsSource(i){
   savingsSources.splice(i, 1);
   renderSavingsSources();
-  calcBudget(lastA, lastB);
+  calcBudget(lastA, lastB, lastC);
 }
 
 function updateSavingsSource(i, field, value){
@@ -1044,7 +1173,7 @@ function updateSavingsSource(i, field, value){
   else if(field === 'future') savingsSources[i][field] = !!value;
   else savingsSources[i][field] = value;
   syncSavingsData();
-  calcBudget(lastA, lastB);
+  calcBudget(lastA, lastB, lastC);
 }
 
 function syncSavingsData(){
@@ -1124,7 +1253,7 @@ function toggleHealthDetail(){
   panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
-function calcHealthScore(a, b){
+function calcHealthScore(a, b, c){
   const salary = num('bud_salary');
   const emergency = savingsSources.reduce((s,i)=>s+(i.emergency||0), 0);
   const savingsContrib = num('bud_savings_contrib');
@@ -1140,6 +1269,7 @@ function calcHealthScore(a, b){
     document.getElementById('healthWantsRow').innerHTML = '<span>Wants</span><span>—</span>';
     document.getElementById('healthHousingA').textContent = '—';
     document.getElementById('healthHousingB').textContent = '—';
+    document.getElementById('healthHousingC').textContent = '—';
     return;
   }
 
@@ -1163,19 +1293,19 @@ function calcHealthScore(a, b){
   document.getElementById('healthWantsRow').innerHTML = `<span>Wants</span><span>${wantsPct.toFixed(0)}% (target ≤30%)</span>`;
 
   // Housing affordability per property, vs 35% guideline
-  const housingPctA = a.totalMonthly ? (a.totalMonthly/salary)*100 : 0;
-  const housingPctB = b.totalMonthly ? (b.totalMonthly/salary)*100 : 0;
-  const housingScoreA = a.totalMonthly ? Math.max(0, 100 - Math.max(0, housingPctA-35)*4) : null;
-  const housingScoreB = b.totalMonthly ? Math.max(0, 100 - Math.max(0, housingPctB-35)*4) : null;
-  document.getElementById('healthHousingA').textContent = a.totalMonthly
-    ? `${housingPctA.toFixed(0)}% ${housingPctA<=35 ? '— within the ≤35% guideline' : '— above the commonly cited ≤35% guideline'}`
-    : '—';
-  document.getElementById('healthHousingB').textContent = b.totalMonthly
-    ? `${housingPctB.toFixed(0)}% ${housingPctB<=35 ? '— within the ≤35% guideline' : '— above the commonly cited ≤35% guideline'}`
-    : '—';
+  const sides = {A:a, B:b, C:c};
+  const housingScores = [];
+  ['A','B','C'].forEach(letter=>{
+    const side = sides[letter];
+    const pct = side.totalMonthly ? (side.totalMonthly/salary)*100 : 0;
+    const score = side.totalMonthly ? Math.max(0, 100 - Math.max(0, pct-35)*4) : null;
+    if(score !== null) housingScores.push(score);
+    document.getElementById(`healthHousing${letter}`).textContent = side.totalMonthly
+      ? `${pct.toFixed(0)}% ${pct<=35 ? '— within the ≤35% guideline' : '— above the commonly cited ≤35% guideline'}`
+      : '—';
+  });
 
   // Composite: emergency, savings rate, spending balance always count; housing counts if at least one property has data
-  const housingScores = [housingScoreA, housingScoreB].filter(x=>x!==null);
   const housingAvg = housingScores.length ? housingScores.reduce((s,x)=>s+x,0)/housingScores.length : null;
   const parts = [emergencyPct, savingsRateScore, spendingScore];
   if(housingAvg !== null) parts.push(housingAvg);
@@ -1191,21 +1321,25 @@ function calcHealthScore(a, b){
   document.getElementById('healthScoreLabel').textContent = label;
 }
 
-function calcBudget(a, b){
-  calcHealthScore(a, b);
+function calcBudget(a, b, c){
+  calcHealthScore(a, b, c);
   calcOverpayment('a', a);
   calcOverpayment('b', b);
+  calcOverpayment('c', c);
   const salary = num('bud_salary');
   const other = num('bud_groceries') + num('bud_transport') + num('bud_utilities') + num('bud_subs') +
                 num('bud_cosmetics') + num('bud_leisure') + num('bud_savings_contrib') + num('bud_other');
   document.getElementById('bud_other_total').textContent = other ? fmt(other) : '—';
 
-  const nameA = document.getElementById('a_name').value || 'Property A';
-  const nameB = document.getElementById('b_name').value || 'Property B';
-  document.getElementById('budA_name').textContent = nameA;
-  document.getElementById('budB_name').textContent = nameB;
+  const sides = {a, b, c};
+  const names = {};
+  ['a','b','c'].forEach(p=>{
+    names[p] = document.getElementById(`${p}_name`).value || `Property ${p.toUpperCase()}`;
+    document.getElementById(`bud${p.toUpperCase()}_name`).textContent = names[p];
+  });
 
-  [['a', a], ['b', b]].forEach(([p, side])=>{
+  ['a','b','c'].forEach(p=>{
+    const side = sides[p];
     const income = document.getElementById(`bud${p.toUpperCase()}_income`);
     const housing = document.getElementById(`bud${p.toUpperCase()}_housing`);
     const otherEl = document.getElementById(`bud${p.toUpperCase()}_other`);
@@ -1223,10 +1357,6 @@ function calcBudget(a, b){
     reasonEl.textContent = 'Add your monthly take-home salary above to see what you would have left under each property.';
     return;
   }
-  const leftA = salary - (a.totalMonthly||0) - other;
-  const leftB = salary - (b.totalMonthly||0) - other;
-  const pctA = salary ? (leftA/salary*100) : 0;
-  const pctB = salary ? (leftB/salary*100) : 0;
   const describe = (pct)=>{
     if(pct < 0) return 'a monthly deficit — costs exceed income as entered';
     if(pct < 10) return 'very tight, little room for anything beyond essentials';
@@ -1234,7 +1364,15 @@ function calcBudget(a, b){
     if(pct < 40) return 'comfortable, with real room for saving and lifestyle spend';
     return 'a large buffer — well within your means';
   };
-  reasonEl.innerHTML = `${nameA}: ${fmt(leftA)}/mo left (${pctA.toFixed(0)}% of income) — ${describe(pctA)}.<br>${nameB}: ${fmt(leftB)}/mo left (${pctB.toFixed(0)}% of income) — ${describe(pctB)}.`;
+  const lines = ['a','b','c'].map(p=>{
+    const side = sides[p];
+    const priceSet = num(`${p}_bid`) || num(`${p}_asking`);
+    if(!priceSet) return null;
+    const left = salary - (side.totalMonthly||0) - other;
+    const pct = salary ? (left/salary*100) : 0;
+    return `${names[p]}: ${fmt(left)}/mo left (${pct.toFixed(0)}% of income) — ${describe(pct)}.`;
+  }).filter(Boolean);
+  reasonEl.innerHTML = lines.join('<br>');
 }
 
 function switchTab(tab){
@@ -1365,9 +1503,12 @@ const fieldIds = [
   'b_name','b_addr','b_asking','b_bid','b_savings','b_size','b_beds','b_comp','b_ber','b_commute','b_daft','b_photos',
   'b_legal','b_survey','b_reg','b_bankfee','b_move','b_repairs','b_furnish',
   'b_rate','b_green','b_greendisc','b_term','b_lpt','b_mgmt','b_ins','b_mpi','b_notes',
-  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay'
+  'c_name','c_addr','c_asking','c_bid','c_savings','c_size','c_beds','c_comp','c_ber','c_commute','c_daft','c_photos',
+  'c_legal','c_survey','c_reg','c_bankfee','c_move','c_repairs','c_furnish',
+  'c_rate','c_green','c_greendisc','c_term','c_lpt','c_mgmt','c_ins','c_mpi','c_notes',
+  'bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay','c_overpay'
 ];
-criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`); });
+criteria.forEach(c=>{ fieldIds.push(`w_${c.key}`, `a_s_${c.key}`, `b_s_${c.key}`, `c_s_${c.key}`); });
 
 function gatherData(){
   const data = {};
@@ -1444,7 +1585,7 @@ async function loadSaved(){
 
 // Wire up recalculation
 document.getElementById('g_mortgage').addEventListener('input', recalc);
-['a','b'].forEach(p=>{
+['a','b','c'].forEach(p=>{
   ['asking','bid','savings','legal','survey','reg','bankfee','move','repairs','furnish','rate','green','greendisc','term','lpt','mgmt','ins','mpi','daft','photos'].forEach(f=>{
     const el = document.getElementById(`${p}_${f}`);
     if(el) el.addEventListener('input', recalc);
@@ -1454,7 +1595,7 @@ document.getElementById('g_mortgage').addEventListener('input', recalc);
     if(el) el.addEventListener('input', recalc);
   });
 });
-['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay'].forEach(id=>{
+['bud_salary','bud_groceries','bud_transport','bud_utilities','bud_subs','bud_cosmetics','bud_leisure','bud_savings_contrib','bud_other','savings_sources_data','a_overpay','b_overpay','c_overpay'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) el.addEventListener('input', recalc);
 });
@@ -1465,6 +1606,7 @@ criteria.forEach(c=>{
   });
   document.getElementById(`a_s_${c.key}`).addEventListener('input', recalc);
   document.getElementById(`b_s_${c.key}`).addEventListener('input', recalc);
+  document.getElementById(`c_s_${c.key}`).addEventListener('input', recalc);
 });
 
 // Save on any change to any tracked field
